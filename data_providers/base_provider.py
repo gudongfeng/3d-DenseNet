@@ -43,9 +43,9 @@ class VideosDataset(DataSet):
 
   def shuffle_videos_and_labels(self, videos, labels):
     rand_indexes = np.random.permutation(videos.shape[0])
-    shuffled_images = images[rand_indexes]
+    shuffled_videos = videos[rand_indexes]
     shuffled_labels = labels[rand_indexes]
-    return shuffled_images, shuffled_labels
+    return shuffled_videos, shuffled_labels
 
   def normalize_videos(self, videos, normalization_type):
     """
@@ -102,7 +102,7 @@ class DataProvider:
     Args:
       labels: 1D numpy array
     """
-    labels = np.array(labels)
+    labels = labels
     new_labels = np.zeros((labels.shape[0], self.n_classes))
     new_labels[range(labels.shape[0]), labels] = np.ones(labels.shape)
     return new_labels

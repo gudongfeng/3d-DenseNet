@@ -32,6 +32,7 @@ class Data(VideosDataset):
     self.videos = videos
     self.labels = labels
     self.normalization = normalization
+    self.start_new_epoch()
 
   def start_new_epoch(self):
     self._batch_counter = 0
@@ -129,6 +130,7 @@ class DataProvider(DataProvider):
             for i in range(start, len(filenames)):
               image_name = str(filename) + '/' + str(filenames[i])
               img = Image.open(image_name)
+              img = img.resize((self._crop_size, self._crop_size))
               img_data = np.array(img)
               video.append(img_data)
             videos.append(video)
@@ -138,6 +140,7 @@ class DataProvider(DataProvider):
         for i in range(index, index + self._sequence_length):
           image_name = str(filename) + '/' + str(filenames[i])
           img = Image.open(image_name)
+          img = img.resize((self._crop_size, self._crop_size))
           img_data = np.array(img)
           video.append(img_data)
         videos.append(video)
@@ -165,31 +168,14 @@ class DataProvider(DataProvider):
       line = lines[index].strip('\n').split()
       dir_name = line[0]
       tmp_label = line[1]
-      # tmp_data is a list of videos which contain PIL Images
+      # tmp_data is a list of videos which contain numpy images
       tmp_data = self._get_frames_data(dir_name)
       if len(tmp_data) != 0:
         for video_index in range(len(tmp_data)):
-          images_data = []
-          for image in tmp_data[video_index]:
-            img = Image.fromarray(image.astype(np.uint8))
-            # Scale the image according to the crop size
-            if img.width > img.height:
-              scale = float(self._crop_size)/float(img.height)
-              img = np.array(cv2.resize(
-                              np.array(img), 
-                              (int(img.width*scale + 1), self._crop_size)
-                            )).astype(np.float32)
-            else:
-              scale = float(self._crop_size)/float(img.width)
-              img = np.array(cv2.resize(
-                              np.array(img),
-                              (self._crop_size, int(img.height*scale + 1))
-                            )).astype(np.float32)
-            # Shape of images_data is:
-            #   [sequence_lenggh, crop_size, crop_size, channel]
-            images_data.append(img)
-          data.append(images_data)
           labels.append(int(tmp_label))
+        data.extend(tmp_data)
+    data = np.array(data)
+    labels = np.array(labels)
     if one_hot:
       labels = self.labels_to_one_hot(labels)
     return data, labels
@@ -210,8 +196,8 @@ if __name__ == '__main__':
   def plot_images_labels(videos, labels, axes, main_label):
     plt.text(0, 1.5, main_label, ha='center', va='top',
          transform=axes[len(axes) // 2].transAxes)
-    for image, label, axe in zip(videos[0], labels, axes):
-      axe.imshow(image)
+    for video, label, axe in zip(videos, labels, axes):
+      axe.imshow(video[0])
       axe.set_title(np.argmax(label))
       axe.set_axis_off()
 
@@ -219,16 +205,18 @@ if __name__ == '__main__':
   fig, axes = plt.subplots(nrows=2, ncols=n_plots)
 
   dataset = DataProvider()
+  videos, labels = dataset.train.next_batch(n_plots)
   plot_images_labels(
-    dataset.train.videos[:n_plots],
-    dataset.train.labels[:n_plots],
+    videos,
+    labels,
     axes[0],
     'Original dataset')
 
   dataset = DataProvider(shuffle=True)
+  videos, labels = dataset.train.next_batch(n_plots)
   plot_images_labels(
-    dataset.train.videos[:n_plots],
-    dataset.train.labels[:n_plots],
+    videos,
+    labels,
     axes[1],
     'Shuffled dataset')
 
