@@ -8,12 +8,7 @@ import cv2
 
 from base_provider import VideosDataset, DataProvider
 
-# Total class number of UCF101 dataset is 101
-NUM_CLASSES = 101
-
 class Data(VideosDataset):
-  n_classes = NUM_CLASSES
-
   def __init__(self, videos, labels, shuffle, normalization):
     """
     Args:
@@ -62,12 +57,12 @@ class Data(VideosDataset):
 
 
 class DataProvider(DataProvider):
-  def __init__(self, validation_set=None, one_hot=True, validation_split=None,
-               shuffle=False, normalization=None, sequence_length=16,
-               overlap_length=8, crop_size=128, **kwargs):
+  def __init__(self, num_classes, validation_set=None, one_hot=True,
+               validation_split=None, shuffle=False, normalization=None,
+               sequence_length=16, overlap_length=8, crop_size=128, **kwargs):
     """
     Args:
-      save_path: `str`
+      num_classes: the number of the classes
       validation_set: `bool`.
       validation_split: `int` or None
           float: chunk of `train set` will be marked as `validation set`.
@@ -86,6 +81,7 @@ class DataProvider(DataProvider):
         the video clips this should be less than sequence_length
       crop_size: `integer`, the size that you want to reshape the images
     """
+    self._num_classes = num_classes
     self._sequence_length = sequence_length
     self._overlap_length = overlap_length
     self._crop_size = crop_size
@@ -182,7 +178,7 @@ class DataProvider(DataProvider):
 
   @property
   def n_classes(self):
-    return NUM_CLASSES
+    return self._num_classes
 
   @property
   def data_shape(self):
@@ -204,7 +200,7 @@ if __name__ == '__main__':
   n_plots = 10
   fig, axes = plt.subplots(nrows=2, ncols=n_plots)
 
-  dataset = DataProvider()
+  dataset = DataProvider(5)
   videos, labels = dataset.train.next_batch(n_plots)
   plot_images_labels(
     videos,
@@ -212,7 +208,7 @@ if __name__ == '__main__':
     axes[0],
     'Original dataset')
 
-  dataset = DataProvider(shuffle=True)
+  dataset = DataProvider(5, shuffle=True)
   videos, labels = dataset.train.next_batch(n_plots)
   plot_images_labels(
     videos,
