@@ -173,7 +173,7 @@ class DenseNet3D:
     self.videos = tf.placeholder(
       tf.float32,
       shape=shape,
-      name='input_images')
+      name='input_videos')
     self.labels = tf.placeholder(
       tf.float32,
       shape=[None, self.n_classes],
@@ -461,7 +461,7 @@ class DenseNet3D:
     for i in range(num_examples // batch_size):
       batch = data.next_batch(batch_size)
       feed_dict = {
-        self.images: batch[0],
+        self.videos: batch[0],
         self.labels: batch[1],
         self.is_training: False,
       }
