@@ -326,12 +326,14 @@ class DenseNet3D:
       shape=shape,
       initializer=tf.contrib.layers.variance_scaling_initializer())
 
+  # (Updated)
   def weight_variable_xavier(self, shape, name):
     return tf.get_variable(
       name,
       shape=shape,
       initializer=tf.contrib.layers.xavier_initializer())
 
+  # (Updated)
   def bias_variable(self, shape, name='bias'):
     initial = tf.constant(0.0, shape=shape)
     return tf.get_variable(name, initializer=initial)

@@ -1,18 +1,18 @@
 import argparse
 
-from models.dense_net import DenseNet
+from models.dense_net_3d import DenseNet3D
 from data_providers.utils import get_data_provider_by_name
 
 train_params_merl = {
     'num_classes': 5,
-    'batch_size': 64,
+    'batch_size': 10,
     'n_epochs': 300,
     'initial_learning_rate': 0.1,
-    'reduce_lr_epoch_1': 150,  # epochs * 0.5
-    'reduce_lr_epoch_2': 225,  # epochs * 0.75
+    'reduce_lr_epoch_1': 50,  # epochs * 0.5
+    'reduce_lr_epoch_2': 100,  # epochs * 0.75
     'validation_set': True,
     'validation_split': None,  # None or float
-    'shuffle': 'every_epoch',  # None, once_prior_train, every_epoch
+    'shuffle': True,  # None, once_prior_train, every_epoch
     'normalization': 'by_chanels',  # None, divide_256, divide_255, by_chanels
 }
 
@@ -31,7 +31,7 @@ train_params_ucf101 = {
 
 
 def get_train_params_by_name(name):
-    if name == 'UCF101:
+    if name == 'UCF101':
         return train_params_ucf101
     if name == 'MERL':
         return train_params_merl
@@ -57,8 +57,8 @@ if __name__ == '__main__':
         help='Grows rate for every layer, '
              'choices were restricted to used in paper')
     parser.add_argument(
-        '--depth', '-d', type=int, choices=[40, 100, 190, 250],
-        default=40,
+        '--depth', '-d', type=int, choices=[20, 40, 100, 190, 250],
+        default=20,
         help='Depth of whole network, restricted to paper choices')
     parser.add_argument(
         '--dataset', '-ds', type=str,
