@@ -231,9 +231,9 @@ class DenseNet3D:
         bottleneck_out, out_features=growth_rate, kernel_size=3)
     # concatenate _input with out from composite function
     if TF_VERSION >= 1.0:
-      output = tf.concat(axis=3, values=(_input, comp_out))
+      output = tf.concat(axis=4, values=(_input, comp_out))
     else:
-      output = tf.concat(3, (_input, comp_out))
+      output = tf.concat(4, (_input, comp_out))
     return output
 
   # (Updated)
@@ -272,7 +272,8 @@ class DenseNet3D:
     output = tf.nn.relu(output)
     # average pooling
     last_pool_kernel = int(output.get_shape()[-2])
-    output = self.avg_pool(output, k=last_pool_kernel)
+    last_sequence_length = int(output.get_shape()[1])
+    output = self.avg_pool(output, k=last_pool_kernel, d=last_sequence_length)
     # FC
     features_total = int(output.get_shape()[-1])
     output = tf.reshape(output, [-1, features_total])

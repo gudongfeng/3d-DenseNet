@@ -73,8 +73,8 @@ class DataProvider(DataProvider):
           None: no any normalization
           divide_255: divide all pixels by 255
           divide_256: divide all pixels by 256
-          by_chanels: substract mean of every chanel and divide each
-              chanel data by it's standart deviation
+          by_channels: substract mean of every channel and divide each
+              channel data by it's standart deviation
       sequence_length: `integer`, video clip length
       overlap_length: `integer`, the overlap of the images when we extract
         the video clips this should be less than sequence_length

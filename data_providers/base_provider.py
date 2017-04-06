@@ -24,7 +24,7 @@ class VideosDataset(DataSet):
     #   [num_examples, sequence_length, height, width, channel]
     # For every channel in image (assume this is the last dimension)
     for ch in range(self.videos.shape[-1]):
-      means.append(np.mean(self.images[:, :, :, :, ch]))
+      means.append(np.mean(self.videos[:, :, :, :, ch]))
       stds.append(np.std(self.videos[:, :, :, :, ch]))
     self._means = means
     self._stds = stds
@@ -78,10 +78,10 @@ class VideosDataset(DataSet):
 
   def normalize_image_by_channel(self, image):
     new_image = np.zeros(image.shape)
-    for chanel in range(3):
-      mean = np.mean(image[:, :, chanel])
-      std = np.std(image[:, :, chanel])
-      new_image[:, :, chanel] = (image[:, :, chanel] - mean) / std
+    for channel in range(3):
+      mean = np.mean(image[:, :, channel])
+      std = np.std(image[:, :, channel])
+      new_image[:, :, channel] = (image[:, :, channel] - mean) / std
     return new_image
 
 

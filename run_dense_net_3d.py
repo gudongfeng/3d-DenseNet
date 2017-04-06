@@ -6,14 +6,14 @@ from data_providers.utils import get_data_provider_by_name
 train_params_merl = {
     'num_classes': 5,
     'batch_size': 10,
-    'n_epochs': 300,
+    'n_epochs': 100,
     'initial_learning_rate': 0.1,
     'reduce_lr_epoch_1': 50,  # epochs * 0.5
-    'reduce_lr_epoch_2': 100,  # epochs * 0.75
+    'reduce_lr_epoch_2': 75,  # epochs * 0.75
     'validation_set': True,
     'validation_split': None,  # None or float
     'shuffle': True,  # None, once_prior_train, every_epoch
-    'normalization': 'by_chanels',  # None, divide_256, divide_255, by_chanels
+    'normalization': 'by_channels',  # None, divide_256, divide_255, by_channels
 }
 
 train_params_ucf101 = {
@@ -138,12 +138,12 @@ if __name__ == '__main__':
     print("Initialize the model..")
     model = DenseNet3D(data_provider=data_provider, **model_params)
     if args.train:
-        print("Data provider train images: ", data_provider.train.num_examples)
+        print("Data provider train videos: ", data_provider.train.num_examples)
         model.train_all_epochs(train_params)
     if args.test:
         if not args.train:
             model.load_model()
-        print("Data provider test images: ", data_provider.test.num_examples)
+        print("Data provider test videos: ", data_provider.test.num_examples)
         print("Testing...")
         loss, accuracy = model.test(data_provider.test, batch_size=200)
         print("mean cross_entropy: %f, mean accuracy: %f" % (loss, accuracy))
