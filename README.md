@@ -92,7 +92,7 @@ Test results on MERL dataset. Video normalization per channels was used.
 
 |Model type             |Depth  |MERL      |
 |-----------------------|:-----:|---------:|
-|DenseNet(*k* = 12)     |20     |70%       |
+|DenseNet(*k* = 12)     |20     |0.717647  |
 
 
 Approximate training time for models on GeForce GTX TITAN X (12 GB memory):
