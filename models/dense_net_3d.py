@@ -173,7 +173,7 @@ class DenseNet3D:
     self.videos = tf.placeholder(
       tf.float32,
       shape=shape,
-      name='input_images')
+      name='input_videos')
     self.labels = tf.placeholder(
       tf.float32,
       shape=[None, self.n_classes],
@@ -231,9 +231,9 @@ class DenseNet3D:
         bottleneck_out, out_features=growth_rate, kernel_size=3)
     # concatenate _input with out from composite function
     if TF_VERSION >= 1.0:
-      output = tf.concat(axis=3, values=(_input, comp_out))
+      output = tf.concat(axis=4, values=(_input, comp_out))
     else:
-      output = tf.concat(3, (_input, comp_out))
+      output = tf.concat(4, (_input, comp_out))
     return output
 
   # (Updated)
@@ -272,7 +272,8 @@ class DenseNet3D:
     output = tf.nn.relu(output)
     # average pooling
     last_pool_kernel = int(output.get_shape()[-2])
-    output = self.avg_pool(output, k=last_pool_kernel)
+    last_sequence_length = int(output.get_shape()[1])
+    output = self.avg_pool(output, k=last_pool_kernel, d=last_sequence_length)
     # FC
     features_total = int(output.get_shape()[-1])
     output = tf.reshape(output, [-1, features_total])
@@ -326,12 +327,14 @@ class DenseNet3D:
       shape=shape,
       initializer=tf.contrib.layers.variance_scaling_initializer())
 
+  # (Updated)
   def weight_variable_xavier(self, shape, name):
     return tf.get_variable(
       name,
       shape=shape,
       initializer=tf.contrib.layers.xavier_initializer())
 
+  # (Updated)
   def bias_variable(self, shape, name='bias'):
     initial = tf.constant(0.0, shape=shape)
     return tf.get_variable(name, initializer=initial)
@@ -458,7 +461,7 @@ class DenseNet3D:
     for i in range(num_examples // batch_size):
       batch = data.next_batch(batch_size)
       feed_dict = {
-        self.images: batch[0],
+        self.videos: batch[0],
         self.labels: batch[1],
         self.is_training: False,
       }
