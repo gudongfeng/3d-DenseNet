@@ -139,7 +139,7 @@ if __name__ == '__main__':
     for k, v in train_params.items():
         print("\t%s: %s" % (k, v))
 
-    print("Prepare training data...")
+    print("Prepare all the data...")
     data_provider = get_data_provider_by_name(args.dataset, train_params)
     print("Initialize the model..")
     model = DenseNet3D(data_provider=data_provider, **model_params)
@@ -151,5 +151,5 @@ if __name__ == '__main__':
             model.load_model()
         print("Data provider test videos: ", data_provider.test.num_examples)
         print("Testing...")
-        loss, accuracy = model.test(data_provider.test, batch_size=200)
+        loss, accuracy = model.test(data_provider.test, batch_size=50)
         print("mean cross_entropy: %f, mean accuracy: %f" % (loss, accuracy))
