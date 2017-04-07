@@ -56,21 +56,21 @@ if __name__ == '__main__':
     parser.add_argument(
         '--model_type', '-m', type=str, choices=['DenseNet', 'DenseNet-BC'],
         default='DenseNet',
-        help='What type of model to use')
+        help='What type of model to use (default: %(default)s)')
     parser.add_argument(
         '--growth_rate', '-k', type=int, choices=[12, 24, 40],
         default=12,
         help='Grows rate for every layer, '
-             'choices were restricted to used in paper')
+             'choices were restricted to used in paper (default: %(default)s)')
     parser.add_argument(
         '--depth', '-d', type=int, choices=[20, 40, 100, 190, 250],
         default=20,
-        help='Depth of whole network, restricted to paper choices')
+        help='Depth of whole network, restricted to paper choices (default: %(default)s)')
     parser.add_argument(
         '--dataset', '-ds', type=str,
         choices=['MERL', 'UCF101'],
         default='MERL',
-        help='What dataset should be used')
+        help='What dataset should be used (default: %(default)s)')
     parser.add_argument(
         '--total_blocks', '-tb', type=int, default=3, metavar='',
         help='Total blocks of layers stack (default: %(default)s)')
@@ -85,7 +85,7 @@ if __name__ == '__main__':
         help='Nesterov momentum (default: %(default)s)')
     parser.add_argument(
         '--reduction', '-red', type=float, default=0.5, metavar='',
-        help='reduction Theta at transition layer for DenseNets-BC models')
+        help='reduction Theta at transition layer for DenseNets-BC models (default: %(default)s)')
 
     parser.add_argument(
         '--logs', dest='should_save_logs', action='store_true',

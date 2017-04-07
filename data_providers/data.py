@@ -1,7 +1,6 @@
 import tempfile
 import os
 import PIL.Image as Image
-#from six.moves import xrange
 
 import numpy as np
 
