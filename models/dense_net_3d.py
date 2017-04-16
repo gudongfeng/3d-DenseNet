@@ -247,15 +247,14 @@ class DenseNet3D:
 
   # (Updated)
   def transition_layer(self, _input):
-    """Call H_l composite function with 1x1 kernel and after average
-    pooling
+    """Call H_l composite function with 1x1 kernel and after pooling
     """
     # call composite function with 1x1 kernel
     out_features = int(int(_input.get_shape()[-1]) * self.reduction)
     output = self.composite_function(
       _input, out_features=out_features, kernel_size=1)
-    # run average pooling
-    output = self.avg_pool(output, k=2)
+    # run pooling
+    output = self.pool(output, k=2)
     return output
 
   # (Updated)
@@ -263,17 +262,17 @@ class DenseNet3D:
     """This is last transition to get probabilities by classes. It perform:
     - batch normalization
     - ReLU nonlinearity
-    - wide average pooling
+    - wide pooling
     - FC layer multiplication
     """
     # BN
     output = self.batch_norm(_input)
     # ReLU
     output = tf.nn.relu(output)
-    # average pooling
+    # pooling
     last_pool_kernel = int(output.get_shape()[-2])
     last_sequence_length = int(output.get_shape()[1])
-    output = self.avg_pool(output, k=last_pool_kernel, d=last_sequence_length)
+    output = self.pool(output, k=last_pool_kernel, d=last_sequence_length)
     # FC
     features_total = int(output.get_shape()[-1])
     output = tf.reshape(output, [-1, features_total])
@@ -294,11 +293,11 @@ class DenseNet3D:
     return output
 
   # (Updated)
-  def avg_pool(self, _input, k, d=2):
+  def pool(self, _input, k, d=2):
     ksize = [1, d, k, k, 1]
     strides = [1, d, k, k, 1]
     padding = 'VALID'
-    output = tf.nn.avg_pool3d(_input, ksize, strides, padding)
+    output = tf.nn.max_pool3d(_input, ksize, strides, padding)
     return output
 
   # (Updated)
