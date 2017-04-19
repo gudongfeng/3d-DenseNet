@@ -246,7 +246,7 @@ class DenseNet3D:
     return output
 
   # (Updated)
-  def transition_layer(self, _input):
+  def transition_layer(self, _input, pool_depth=2):
     """Call H_l composite function with 1x1 kernel and after pooling
     """
     # call composite function with 1x1 kernel
@@ -254,7 +254,7 @@ class DenseNet3D:
     output = self.composite_function(
       _input, out_features=out_features, kernel_size=1)
     # run pooling
-    output = self.pool(output, k=2)
+    output = self.pool(output, k=2, d=pool_depth)
     return output
 
   # (Updated)
@@ -356,7 +356,8 @@ class DenseNet3D:
       # last block exist without transition layer
       if block != self.total_blocks - 1:
         with tf.variable_scope("Transition_after_block_%d" % block):
-          output = self.transition_layer(output)
+          pool_depth = 1 if block == 0 else 2
+          output = self.transition_layer(output, pool_depth)
 
     with tf.variable_scope("Transition_to_classes"):
       logits = self.trainsition_layer_to_classes(output)
