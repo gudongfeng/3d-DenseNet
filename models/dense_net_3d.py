@@ -247,7 +247,7 @@ class DenseNet3D:
 
   # (Updated)
   def transition_layer(self, _input, pool_depth=2):
-    """Call H_l composite function with 1x1 kernel and after pooling
+    """Call H_l composite function with 1x1 kernel and pooling
     """
     # call composite function with 1x1 kernel
     out_features = int(int(_input.get_shape()[-1]) * self.reduction)
@@ -297,7 +297,8 @@ class DenseNet3D:
     ksize = [1, d, k, k, 1]
     strides = [1, d, k, k, 1]
     padding = 'VALID'
-    output = tf.nn.max_pool3d(_input, ksize, strides, padding)
+    # output = tf.nn.max_pool3d(_input, ksize, strides, padding)
+    output = tf.nn.avg_pool3d(_input, ksize, strides, padding)
     return output
 
   # (Updated)
