@@ -273,11 +273,17 @@ class DenseNet3D:
     last_pool_kernel = int(output.get_shape()[-2])
     last_sequence_length = int(output.get_shape()[1])
     output = self.pool(output, k=last_pool_kernel, d=last_sequence_length)
-    # FC
+    # FC 1000
     features_total = int(output.get_shape()[-1])
-    output = tf.reshape(output, [-1, features_total])
+    fc_weights = self.weight_variable_xavier([features_total, 1000],
+                                             name='fc_weights')
+    fc_biases = self.bias_variable([1000], name='fc_biases')
+    output = tf.nn.relu(tf.matmul(output, fc_weights) + fc_biases)
+    output = self.dropout(output)
+    # Linear layer
+    output = tf.reshape(output, [-1, 1000])
     W = self.weight_variable_xavier(
-      [features_total, self.n_classes], name='W')
+      [1000, self.n_classes], name='W')
     bias = self.bias_variable([self.n_classes])
     logits = tf.matmul(output, W) + bias
     return logits
