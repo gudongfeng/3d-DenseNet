@@ -7,7 +7,7 @@ train_params_merl = {
     'num_classes': 5,
     'batch_size': 5,
     'n_epochs': 100,
-    'crop_size': 100,
+    'crop_size': 224,
     'sequence_length': 16,
     'overlap_length': 6,
     'initial_learning_rate': 0.1,

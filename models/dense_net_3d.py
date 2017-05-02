@@ -293,12 +293,18 @@ class DenseNet3D:
     return output
 
   # (Updated)
-  def pool(self, _input, k, d=2):
+  def pool(self, _input, k, d=2, k_stride=None, d_stride=None, type='average'):
     ksize = [1, d, k, k, 1]
-    strides = [1, d, k, k, 1]
+    if not k_stride: k_stride = k
+    if not d_stride: d_stride = d
+    strides = [1, d_stride, k_stride, k_stride, 1]
     padding = 'VALID'
-    # output = tf.nn.max_pool3d(_input, ksize, strides, padding)
-    output = tf.nn.avg_pool3d(_input, ksize, strides, padding)
+    if type is 'max':
+      output = tf.nn.max_pool3d(_input, ksize, strides, padding)
+    elif type is 'avg':
+      output = tf.nn.avg_pool3d(_input, ksize, strides, padding)
+    else:
+      output = None
     return output
 
   # (Updated)
@@ -348,7 +354,10 @@ class DenseNet3D:
       output = self.conv3d(
         self.videos,
         out_features=self.first_output_features,
-        kernel_size=3)
+        kernel_size=7,
+        strides=[1, 2, 2, 2, 1])
+      # first pooling
+      output = self.pool(output, k=3, d=3, k_stride=2, d_stride=1, type='max')
 
     # add N required blocks
     for block in range(self.total_blocks):
