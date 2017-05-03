@@ -164,7 +164,7 @@ class DataProvider(DataProvider):
       tmp_label = line[1]
       # tmp_data is a list of videos which contain numpy images
       tmp_data = self._get_frames_data(dir_name)
-      if len(tmp_data) != 0:
+      if tmp_data and len(tmp_data) != 0:
         for video_index in range(len(tmp_data)):
           labels.append(int(tmp_label))
         data.extend(tmp_data)
