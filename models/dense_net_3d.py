@@ -372,7 +372,7 @@ class DenseNet3D:
         kernel_size=7,
         strides=[1, 1, 2, 2, 1])
       # first pooling
-      output = self.pool(output, k=3, d=3, k_stride=2, d_stride=1, type='max')
+      output = self.pool(output, k=3, d=3, k_stride=2, d_stride=1)
 
     # add N required blocks
     for block in range(self.total_blocks):
