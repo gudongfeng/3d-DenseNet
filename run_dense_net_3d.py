@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 from models.dense_net_3d import DenseNet3D
 from data_providers.utils import get_data_provider_by_name
@@ -127,12 +128,17 @@ if __name__ == '__main__':
     model_params = vars(args)
 
     if not args.train and not args.test:
-        print("You should train or test your network. Please check params.")
+        print("You should train or test your network. Please check params.", file='log.txt')
         exit()
+
+    # write all the log to the file
+    f = open('log.txt', 'w', 0)
+    sys.stdout = f
+    sys.stderr = f
 
     # some default params dataset/architecture related
     train_params = get_train_params_by_name(args.dataset)
-    print("Params:")
+    print("Params:", file='log.txt')
     for k, v in model_params.items():
         print("\t%s: %s" % (k, v))
     print("Train params:")
@@ -153,3 +159,5 @@ if __name__ == '__main__':
         print("Testing...")
         loss, accuracy = model.test(data_provider.test, batch_size=50)
         print("mean cross_entropy: %f, mean accuracy: %f" % (loss, accuracy))
+    # close the file
+    f.close()
