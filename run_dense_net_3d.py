@@ -128,7 +128,7 @@ if __name__ == '__main__':
     model_params = vars(args)
 
     if not args.train and not args.test:
-        print("You should train or test your network. Please check params.", file='log.txt')
+        print("You should train or test your network. Please check params.")
         exit()
 
     # write all the log to the file
@@ -138,7 +138,7 @@ if __name__ == '__main__':
 
     # some default params dataset/architecture related
     train_params = get_train_params_by_name(args.dataset)
-    print("Params:", file='log.txt')
+    print("Params:")
     for k, v in model_params.items():
         print("\t%s: %s" % (k, v))
     print("Train params:")
