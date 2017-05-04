@@ -7,12 +7,12 @@ train_params_merl = {
     'num_classes': 5,
     'batch_size': 5,
     'n_epochs': 100,
-    'crop_size': 224,
+    'crop_size': 112,
     'sequence_length': 16,
     'overlap_length': 6,
     'initial_learning_rate': 0.1,
-    'reduce_lr_epoch_1': 40,  # epochs * 0.5
-    'reduce_lr_epoch_2': 65,  # epochs * 0.75
+    'reduce_lr_epoch_1': 50,  # epochs * 0.5
+    'reduce_lr_epoch_2': 75,  # epochs * 0.75
     'validation_set': True,
     'validation_split': None,  # None or float
     'shuffle': True,  # None, once_prior_train, every_epoch
