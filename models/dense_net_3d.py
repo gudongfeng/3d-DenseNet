@@ -118,7 +118,7 @@ class DenseNet3D:
     try:
       save_path = self._save_path
     except AttributeError:
-      save_path = 'saves/%s' % self.model_identifier
+      save_path = 'saves/%s' % self.model_identifier      
       if platform.python_version_tuple()[0] is '2':
         if not os.path.exists(save_path):
           os.makedirs(save_path)
@@ -282,17 +282,11 @@ class DenseNet3D:
     last_pool_kernel = int(output.get_shape()[-2])
     last_sequence_length = int(output.get_shape()[1])
     output = self.pool(output, k=last_pool_kernel, d=last_sequence_length)
-    # FC 1000
+    # FC
     features_total = int(output.get_shape()[-1])
     output = tf.reshape(output, [-1, features_total])
-    fc_weights = self.weight_variable_xavier([features_total, 1000],
-                                             name='fc_weights')
-    fc_biases = self.bias_variable([1000], name='fc_biases')
-    output = tf.nn.relu(tf.matmul(output, fc_weights) + fc_biases)
-    output = self.dropout(output)
-    # Linear layer
     W = self.weight_variable_xavier(
-      [1000, self.n_classes], name='W')
+      [features_total, self.n_classes], name='W')
     bias = self.bias_variable([self.n_classes])
     logits = tf.matmul(output, W) + bias
     return logits
@@ -308,18 +302,12 @@ class DenseNet3D:
     return output
 
   # (Updated)
-  def pool(self, _input, k, d=2, k_stride=None, d_stride=None, type='avg'):
+  def pool(self, _input, k, d=2):
     ksize = [1, d, k, k, 1]
-    if not k_stride: k_stride = k
-    if not d_stride: d_stride = d
-    strides = [1, d_stride, k_stride, k_stride, 1]
+    strides = [1, d, k, k, 1]
     padding = 'SAME'
-    if type is 'max':
-      output = tf.nn.max_pool3d(_input, ksize, strides, padding)
-    elif type is 'avg':
-      output = tf.nn.avg_pool3d(_input, ksize, strides, padding)
-    else:
-      output = None
+    # output = tf.nn.max_pool3d(_input, ksize, strides, padding)
+    output = tf.nn.avg_pool3d(_input, ksize, strides, padding)
     return output
 
   # (Updated)
@@ -369,10 +357,7 @@ class DenseNet3D:
       output = self.conv3d(
         self.videos,
         out_features=self.first_output_features,
-        kernel_size=7,
-        strides=[1, 1, 2, 2, 1])
-      # first pooling
-      output = self.pool(output, k=3, d=3, k_stride=2, d_stride=1)
+        kernel_size=3)
 
     # add N required blocks
     for block in range(self.total_blocks):
@@ -381,8 +366,7 @@ class DenseNet3D:
       # last block exist without transition layer
       if block != self.total_blocks - 1:
         with tf.variable_scope("Transition_after_block_%d" % block):
-          #pool_depth = 1 if block == 0 else 2
-          pool_depth = 2
+          pool_depth = 1 if block == 0 else 2
           output = self.transition_layer(output, pool_depth)
 
     with tf.variable_scope("Transition_to_classes"):
