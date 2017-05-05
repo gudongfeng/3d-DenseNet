@@ -131,7 +131,7 @@ if __name__ == '__main__':
         print("You should train or test your network. Please check params.")
         exit()
 
-    # write all the log to the file
+    # write all the log to the file without buffer
     f = open('log.txt', 'w', 0)
     sys.stdout = f
     sys.stderr = f
@@ -159,5 +159,6 @@ if __name__ == '__main__':
         print("Testing...")
         loss, accuracy = model.test(data_provider.test, batch_size=50)
         print("mean cross_entropy: %f, mean accuracy: %f" % (loss, accuracy))
+    
     # close the file
     f.close()

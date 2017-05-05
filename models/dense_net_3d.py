@@ -99,7 +99,7 @@ class DenseNet3D:
     else:
       self.sess.run(tf.global_variables_initializer())
       logswriter = tf.summary.FileWriter
-    self.saver = tf.train.Saver()
+    self.saver = tf.train.Saver(tf.global_variables(), max_to_keep=0)
     self.summary_writer = logswriter(self.logs_path)
 
   # (Updated)
@@ -117,16 +117,18 @@ class DenseNet3D:
   def save_path(self):
     try:
       save_path = self._save_path
+      model_path = self._model_path
     except AttributeError:
-      save_path = 'saves/%s' % self.model_identifier      
+      save_path = 'saves/%s' % self.model_identifier
       if platform.python_version_tuple()[0] is '2':
         if not os.path.exists(save_path):
           os.makedirs(save_path)
       else:
         os.makedirs(save_path, exist_ok=True)
-      save_path = os.path.join(save_path, 'model.chkpt')
+      model_path = os.path.join(save_path, 'model.chkpt')
       self._save_path = save_path
-    return save_path
+      self._model_path = model_path
+    return save_path, model_path
 
   @property
   def logs_path(self):
@@ -151,15 +153,26 @@ class DenseNet3D:
 
   # (Updated)
   def save_model(self, global_step=None):
-    self.saver.save(self.sess, self.save_path, global_step=global_step)
+    self.saver.save(self.sess, self.save_path[1], global_step=global_step)
 
   def load_model(self):
-    try:
-      self.saver.restore(self.sess, self.save_path)
-    except Exception as e:
-      raise IOError("Failed to to load model "
-              "from save path: %s" % self.save_path)
-    print("Successfully load model from save path: %s" % self.save_path)
+    """load the sess from the pretrain model
+
+      Returns:
+        start_epoch: the start step to train the model
+    """
+    # Restore the trianing model from the folder
+    ckpt =  tf.train.get_checkpoint_state(self.save_path[0])
+    if ckpt and ckpt.model_checkpoint_path:
+      self.saver.restore(self.sess, ckpt.model_checkpoint_path)
+      start_epoch = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
+      start_epoch = int(start_epoch) + 1
+      print("Successfully load model from save path: %s and epoch: %s" 
+          % (self.save_path[0], start_epoch))
+      return start_epoch
+    else:
+      print("Training from scratch")
+      return 1
 
   # (Updated)
   def log_loss_accuracy(self, loss, accuracy, epoch, prefix,
@@ -394,16 +407,26 @@ class DenseNet3D:
   # (Updated)
   def train_all_epochs(self, train_params):
     n_epochs = train_params['n_epochs']
-    learning_rate = train_params['initial_learning_rate']
+    init_learning_rate = train_params['initial_learning_rate']
     batch_size = train_params['batch_size']
     reduce_lr_epoch_1 = train_params['reduce_lr_epoch_1']
     reduce_lr_epoch_2 = train_params['reduce_lr_epoch_2']
     total_start_time = time.time()
-    for epoch in range(1, n_epochs + 1):
+
+    # Restore the model if we have
+    start_epoch = self.load_model()
+    
+    # Start training 
+    for epoch in range(start_epoch, n_epochs + 1):
       print("\n", '-' * 30, "Train epoch: %d" % epoch, '-' * 30, '\n')
       start_time = time.time()
-      if epoch == reduce_lr_epoch_1 or epoch == reduce_lr_epoch_2:
+      learning_rate = init_learning_rate
+      # Update the learning rate according to the decay parameter
+      if epoch >= reduce_lr_epoch_1 and epoch < reduce_lr_epoch_2:
         learning_rate = learning_rate / 10
+        print("Decrease learning rate, new lr = %f" % learning_rate)
+      elif epoch >= reduce_lr_epoch_2:
+        learning_rate = learning_rate / 100
         print("Decrease learning rate, new lr = %f" % learning_rate)
 
       print("Training...")
