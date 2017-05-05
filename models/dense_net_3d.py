@@ -149,6 +149,7 @@ class DenseNet3D:
     return "{}_growth_rate={}_depth={}_dataset_{}".format(
       self.model_type, self.growth_rate, self.depth, self.dataset_name)
 
+  # (Updated)
   def save_model(self, global_step=None):
     self.saver.save(self.sess, self.save_path, global_step=global_step)
 
@@ -158,7 +159,6 @@ class DenseNet3D:
     except Exception as e:
       raise IOError("Failed to to load model "
               "from save path: %s" % self.save_path)
-    self.saver.restore(self.sess, self.save_path)
     print("Successfully load model from save path: %s" % self.save_path)
 
   # (Updated)
@@ -426,7 +426,7 @@ class DenseNet3D:
         str(timedelta(seconds=seconds_left))))
 
       if self.should_save_model:
-        self.save_model()
+        self.save_model(global_step=epoch)
 
     total_training_time = time.time() - total_start_time
     print("\nTotal training time: %s" % str(timedelta(
