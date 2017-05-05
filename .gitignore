@@ -4,6 +4,7 @@ __pycache__
 saves/
 logs/
 TODO
-test.list
-train.list
 .vscode
+*.txt
+*.out
+*.list
