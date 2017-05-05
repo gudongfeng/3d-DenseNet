@@ -5,12 +5,13 @@ from models.dense_net_3d import DenseNet3D
 from data_providers.utils import get_data_provider_by_name
 
 train_params_merl = {
+    'gpu_num': 1,
     'num_classes': 5,
     'batch_size': 5,
     'n_epochs': 100,
     'crop_size': 112,
     'sequence_length': 16,
-    'overlap_length': 6,
+    'overlap_length': 2,
     'initial_learning_rate': 0.1,
     'reduce_lr_epoch_1': 50,  # epochs * 0.5
     'reduce_lr_epoch_2': 75,  # epochs * 0.75

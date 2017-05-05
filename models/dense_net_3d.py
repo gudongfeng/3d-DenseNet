@@ -406,12 +406,13 @@ class DenseNet3D:
 
   # (Updated)
   def train_all_epochs(self, train_params):
-    n_epochs = train_params['n_epochs']
+    n_epochs           = train_params['n_epochs']
     init_learning_rate = train_params['initial_learning_rate']
-    batch_size = train_params['batch_size']
-    reduce_lr_epoch_1 = train_params['reduce_lr_epoch_1']
-    reduce_lr_epoch_2 = train_params['reduce_lr_epoch_2']
-    total_start_time = time.time()
+    batch_size         = train_params['batch_size']
+    reduce_lr_epoch_1  = train_params['reduce_lr_epoch_1']
+    reduce_lr_epoch_2  = train_params['reduce_lr_epoch_2']
+    gpu_num            = train_params['gpu_num']
+    total_start_time   = time.time()
 
     # Restore the model if we have
     start_epoch = self.load_model()
