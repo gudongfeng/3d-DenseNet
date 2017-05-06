@@ -234,7 +234,7 @@ class DenseNet3D:
       inter_features = out_features * 4
       output = self.conv3d(
         output, out_features=inter_features, kernel_size=1,
-        padding='SAME')
+        padding='VALID')
       output = self.dropout(output)
     return output
 
@@ -318,8 +318,7 @@ class DenseNet3D:
   def pool(self, _input, k, d=2):
     ksize = [1, d, k, k, 1]
     strides = [1, d, k, k, 1]
-    padding = 'SAME'
-    # output = tf.nn.max_pool3d(_input, ksize, strides, padding)
+    padding = 'VALID'
     output = tf.nn.avg_pool3d(_input, ksize, strides, padding)
     return output
 

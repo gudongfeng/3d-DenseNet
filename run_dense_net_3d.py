@@ -6,7 +6,7 @@ from data_providers.utils import get_data_provider_by_name
 
 train_params_merl = {
     'gpu_num': 1,
-    'num_classes': 5,
+    'num_classes': 10,
     'batch_size': 5,
     'n_epochs': 100,
     'crop_size': 112,
@@ -18,7 +18,7 @@ train_params_merl = {
     'validation_set': True,
     'validation_split': None,  # None or float
     'shuffle': True,  # None, once_prior_train, every_epoch
-    'normalization': 'by_channels',  # None, divide_256, divide_255, by_channels
+    'normalization': 'divide_255',  # None, divide_256, divide_255, by_channels
 }
 
 train_params_ucf101 = {
