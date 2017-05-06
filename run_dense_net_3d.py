@@ -6,8 +6,8 @@ from data_providers.utils import get_data_provider_by_name
 
 train_params_merl = {
     'gpu_num': 1,
-    'num_classes': 10,
-    'batch_size': 5,
+    'num_classes': 5,
+    'batch_size': 10,
     'n_epochs': 100,
     'crop_size': 112,
     'sequence_length': 16,
