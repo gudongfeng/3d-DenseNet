@@ -9,9 +9,9 @@ train_params_merl = {
     'num_classes': 5,
     'batch_size': 10,
     'n_epochs': 100,
-    'crop_size': 112,
+    'crop_size': 64,
     'sequence_length': 16,
-    'overlap_length': 2,
+    'overlap_length': 6,
     'initial_learning_rate': 0.1,
     'reduce_lr_epoch_1': 50,  # epochs * 0.5
     'reduce_lr_epoch_2': 75,  # epochs * 0.75
@@ -65,7 +65,7 @@ if __name__ == '__main__':
         help='Grows rate for every layer, '
              'choices were restricted to used in paper (default: %(default)s)')
     parser.add_argument(
-        '--depth', '-d', type=int, choices=[20, 40, 100, 190, 250],
+        '--depth', '-d', type=int, choices=[20, 30, 40, 100, 190, 250],
         default=20,
         help='Depth of whole network, restricted to paper choices (default: %(default)s)')
     parser.add_argument(
