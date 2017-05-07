@@ -148,8 +148,8 @@ class DenseNet3D:
 
   @property
   def model_identifier(self):
-    return "{}_growth_rate={}_depth={}_dataset_{}".format(
-      self.model_type, self.growth_rate, self.depth, self.dataset_name)
+    return "{}_growth_rate={}_depth={}_dataset_{}_total_block={}".format(
+      self.model_type, self.growth_rate, self.depth, self.dataset_name, self.total_blocks)
 
   # (Updated)
   def save_model(self, global_step=None):
