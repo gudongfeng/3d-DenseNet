@@ -410,7 +410,6 @@ class DenseNet3D:
     batch_size         = train_params['batch_size']
     reduce_lr_epoch_1  = train_params['reduce_lr_epoch_1']
     reduce_lr_epoch_2  = train_params['reduce_lr_epoch_2']
-    gpu_num            = train_params['gpu_num']
     total_start_time   = time.time()
 
     # Restore the model if we have
