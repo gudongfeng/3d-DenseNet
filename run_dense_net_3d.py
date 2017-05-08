@@ -5,11 +5,10 @@ from models.dense_net_3d import DenseNet3D
 from data_providers.utils import get_data_provider_by_name
 
 train_params_merl = {
-    'gpu_num': 1,
     'num_classes': 5,
-    'batch_size': 10,
+    'batch_size': 5,
     'n_epochs': 100,
-    'crop_size': 64,
+    'crop_size': 100,
     'sequence_length': 16,
     'overlap_length': 6,
     'initial_learning_rate': 0.1,
@@ -64,6 +63,10 @@ if __name__ == '__main__':
         default=12,
         help='Grows rate for every layer, '
              'choices were restricted to used in paper (default: %(default)s)')
+    parser.add_argument(
+        '--gpu_num', '-gpu', type=int, default=1,
+        help='How many GPUs you have in your computer.'
+    )
     parser.add_argument(
         '--depth', '-d', type=int, choices=[20, 30, 40, 100, 190, 250],
         default=20,
