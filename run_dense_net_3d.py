@@ -64,10 +64,6 @@ if __name__ == '__main__':
         help='Grows rate for every layer, '
              'choices were restricted to used in paper (default: %(default)s)')
     parser.add_argument(
-        '--gpu_num', '-gpu', type=int, default=1,
-        help='How many GPUs you have in your computer.'
-    )
-    parser.add_argument(
         '--depth', '-d', type=int, choices=[20, 30, 40, 100, 190, 250],
         default=20,
         help='Depth of whole network, restricted to paper choices (default: %(default)s)')
