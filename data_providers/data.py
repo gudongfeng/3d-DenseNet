@@ -1,12 +1,10 @@
 import tempfile
 import os
 import PIL.Image as Image
-#from six.moves import xrange
 
 import numpy as np
-import cv2
 
-from base_provider import VideosDataset, DataProvider
+from .base_provider import VideosDataset, DataProvider
 
 class Data(VideosDataset):
   def __init__(self, videos, labels, shuffle, normalization):
@@ -59,7 +57,7 @@ class Data(VideosDataset):
 class DataProvider(DataProvider):
   def __init__(self, num_classes, validation_set=None, one_hot=True,
                validation_split=None, shuffle=False, normalization=None,
-               sequence_length=16, overlap_length=8, crop_size=128, **kwargs):
+               sequence_length=16, overlap_length=8, crop_size=64, **kwargs):
     """
     Args:
       num_classes: the number of the classes
@@ -74,8 +72,8 @@ class DataProvider(DataProvider):
           None: no any normalization
           divide_255: divide all pixels by 255
           divide_256: divide all pixels by 256
-          by_chanels: substract mean of every chanel and divide each
-              chanel data by it's standart deviation
+          by_channels: substract mean of every channel and divide each
+              channel data by it's standart deviation
       sequence_length: `integer`, video clip length
       overlap_length: `integer`, the overlap of the images when we extract
         the video clips this should be less than sequence_length
@@ -166,7 +164,7 @@ class DataProvider(DataProvider):
       tmp_label = line[1]
       # tmp_data is a list of videos which contain numpy images
       tmp_data = self._get_frames_data(dir_name)
-      if len(tmp_data) != 0:
+      if tmp_data and len(tmp_data) != 0:
         for video_index in range(len(tmp_data)):
           labels.append(int(tmp_label))
         data.extend(tmp_data)

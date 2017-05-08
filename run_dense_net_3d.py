@@ -1,25 +1,32 @@
 import argparse
+import sys
 
-from models.dense_net import DenseNet
+from models.dense_net_3d import DenseNet3D
 from data_providers.utils import get_data_provider_by_name
 
 train_params_merl = {
     'num_classes': 5,
-    'batch_size': 64,
-    'n_epochs': 300,
+    'batch_size': 5,
+    'n_epochs': 100,
+    'crop_size': 100,
+    'sequence_length': 16,
+    'overlap_length': 6,
     'initial_learning_rate': 0.1,
-    'reduce_lr_epoch_1': 150,  # epochs * 0.5
-    'reduce_lr_epoch_2': 225,  # epochs * 0.75
+    'reduce_lr_epoch_1': 50,  # epochs * 0.5
+    'reduce_lr_epoch_2': 75,  # epochs * 0.75
     'validation_set': True,
     'validation_split': None,  # None or float
-    'shuffle': 'every_epoch',  # None, once_prior_train, every_epoch
-    'normalization': 'by_chanels',  # None, divide_256, divide_255, by_chanels
+    'shuffle': True,  # None, once_prior_train, every_epoch
+    'normalization': 'divide_255',  # None, divide_256, divide_255, by_channels
 }
 
 train_params_ucf101 = {
     'num_classes': 101,
     'batch_size': 64,
     'n_epochs': 40,
+    'crop_size': 64,
+    'sequence_length': 16,
+    'overlap_length': 8,
     'initial_learning_rate': 0.1,
     'reduce_lr_epoch_1': 20,
     'reduce_lr_epoch_2': 30,
@@ -31,7 +38,7 @@ train_params_ucf101 = {
 
 
 def get_train_params_by_name(name):
-    if name == 'UCF101:
+    if name == 'UCF101':
         return train_params_ucf101
     if name == 'MERL':
         return train_params_merl
@@ -50,21 +57,25 @@ if __name__ == '__main__':
     parser.add_argument(
         '--model_type', '-m', type=str, choices=['DenseNet', 'DenseNet-BC'],
         default='DenseNet',
-        help='What type of model to use')
+        help='What type of model to use (default: %(default)s)')
     parser.add_argument(
         '--growth_rate', '-k', type=int, choices=[12, 24, 40],
         default=12,
         help='Grows rate for every layer, '
-             'choices were restricted to used in paper')
+             'choices were restricted to used in paper (default: %(default)s)')
     parser.add_argument(
-        '--depth', '-d', type=int, choices=[40, 100, 190, 250],
-        default=40,
-        help='Depth of whole network, restricted to paper choices')
+        '--gpu_num', '-gpu', type=int, default=1,
+        help='How many GPUs you have in your computer.'
+    )
+    parser.add_argument(
+        '--depth', '-d', type=int, choices=[20, 30, 40, 100, 190, 250],
+        default=20,
+        help='Depth of whole network, restricted to paper choices (default: %(default)s)')
     parser.add_argument(
         '--dataset', '-ds', type=str,
         choices=['MERL', 'UCF101'],
         default='MERL',
-        help='What dataset should be used')
+        help='What dataset should be used (default: %(default)s)')
     parser.add_argument(
         '--total_blocks', '-tb', type=int, default=3, metavar='',
         help='Total blocks of layers stack (default: %(default)s)')
@@ -79,7 +90,7 @@ if __name__ == '__main__':
         help='Nesterov momentum (default: %(default)s)')
     parser.add_argument(
         '--reduction', '-red', type=float, default=0.5, metavar='',
-        help='reduction Theta at transition layer for DenseNets-BC models')
+        help='reduction Theta at transition layer for DenseNets-BC models (default: %(default)s)')
 
     parser.add_argument(
         '--logs', dest='should_save_logs', action='store_true',
@@ -124,6 +135,11 @@ if __name__ == '__main__':
         print("You should train or test your network. Please check params.")
         exit()
 
+    # write all the log to the file without buffer
+    f = open('log.txt', 'w', 0)
+    sys.stdout = f
+    sys.stderr = f
+
     # some default params dataset/architecture related
     train_params = get_train_params_by_name(args.dataset)
     print("Params:")
@@ -133,17 +149,20 @@ if __name__ == '__main__':
     for k, v in train_params.items():
         print("\t%s: %s" % (k, v))
 
-    print("Prepare training data...")
+    print("Prepare all the data...")
     data_provider = get_data_provider_by_name(args.dataset, train_params)
     print("Initialize the model..")
-    model = DenseNet(data_provider=data_provider, **model_params)
+    model = DenseNet3D(data_provider=data_provider, **model_params)
     if args.train:
-        print("Data provider train images: ", data_provider.train.num_examples)
+        print("Data provider train videos: ", data_provider.train.num_examples)
         model.train_all_epochs(train_params)
     if args.test:
         if not args.train:
             model.load_model()
-        print("Data provider test images: ", data_provider.test.num_examples)
+        print("Data provider test videos: ", data_provider.test.num_examples)
         print("Testing...")
-        loss, accuracy = model.test(data_provider.test, batch_size=200)
+        loss, accuracy = model.test(data_provider.test, batch_size=50)
         print("mean cross_entropy: %f, mean accuracy: %f" % (loss, accuracy))
+    
+    # close the file
+    f.close()

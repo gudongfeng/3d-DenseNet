@@ -4,3 +4,8 @@ __pycache__
 saves/
 logs/
 TODO
+.vscode
+*.txt
+*.out
+*.list
+*.DS_Store

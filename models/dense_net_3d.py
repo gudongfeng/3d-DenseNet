@@ -1,6 +1,7 @@
 import os
 import time
 import shutil
+import platform
 from datetime import timedelta
 
 import numpy as np
@@ -11,7 +12,7 @@ TF_VERSION = float('.'.join(tf.__version__.split('.')[:2]))
 
 
 class DenseNet3D:
-  def __init__(self, data_provider, growth_rate, depth,
+  def __init__(self, data_provider, growth_rate, gpu_num, depth,
          total_blocks, keep_prob,
          weight_decay, nesterov_momentum, model_type, dataset,
          should_save_logs, should_save_model,
@@ -78,6 +79,7 @@ class DenseNet3D:
     self.should_save_model = should_save_model
     self.renew_logs = renew_logs
     self.batches_step = 0
+    self.gpu_num = gpu_num
 
     self._define_inputs()
     self._build_graph()
@@ -98,7 +100,7 @@ class DenseNet3D:
     else:
       self.sess.run(tf.global_variables_initializer())
       logswriter = tf.summary.FileWriter
-    self.saver = tf.train.Saver()
+    self.saver = tf.train.Saver(tf.global_variables(), max_to_keep=0)
     self.summary_writer = logswriter(self.logs_path)
 
   # (Updated)
@@ -116,12 +118,18 @@ class DenseNet3D:
   def save_path(self):
     try:
       save_path = self._save_path
+      model_path = self._model_path
     except AttributeError:
       save_path = 'saves/%s' % self.model_identifier
-      os.makedirs(save_path, exist_ok=True)
-      save_path = os.path.join(save_path, 'model.chkpt')
+      if platform.python_version_tuple()[0] is '2':
+        if not os.path.exists(save_path):
+          os.makedirs(save_path)
+      else:
+        os.makedirs(save_path, exist_ok=True)
+      model_path = os.path.join(save_path, 'model.chkpt')
       self._save_path = save_path
-    return save_path
+      self._model_path = model_path
+    return save_path, model_path
 
   @property
   def logs_path(self):
@@ -131,26 +139,41 @@ class DenseNet3D:
       logs_path = 'logs/%s' % self.model_identifier
       if self.renew_logs:
         shutil.rmtree(logs_path, ignore_errors=True)
-      os.makedirs(logs_path, exist_ok=True)
+      if platform.python_version_tuple()[0] is '2':
+        if not os.path.exists(logs_path):
+          os.makedirs(logs_path)
+      else:
+        os.makedirs(logs_path, exist_ok=True)
       self._logs_path = logs_path
     return logs_path
 
   @property
   def model_identifier(self):
-    return "{}_growth_rate={}_depth={}_dataset_{}".format(
-      self.model_type, self.growth_rate, self.depth, self.dataset_name)
+    return "{}_growth_rate={}_depth={}_dataset_{}_total_block={}".format(
+      self.model_type, self.growth_rate, self.depth, self.dataset_name, self.total_blocks)
 
+  # (Updated)
   def save_model(self, global_step=None):
-    self.saver.save(self.sess, self.save_path, global_step=global_step)
+    self.saver.save(self.sess, self.save_path[1], global_step=global_step)
 
   def load_model(self):
-    try:
-      self.saver.restore(self.sess, self.save_path + 'something')
-    except Exception as e:
-      raise IOError("Failed to to load model "
-              "from save path: %s" % self.save_path)
-    self.saver.restore(self.sess, self.save_path)
-    print("Successfully load model from save path: %s" % self.save_path)
+    """load the sess from the pretrain model
+
+      Returns:
+        start_epoch: the start step to train the model
+    """
+    # Restore the trianing model from the folder
+    ckpt =  tf.train.get_checkpoint_state(self.save_path[0])
+    if ckpt and ckpt.model_checkpoint_path:
+      self.saver.restore(self.sess, ckpt.model_checkpoint_path)
+      start_epoch = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
+      start_epoch = int(start_epoch) + 1
+      print("Successfully load model from save path: %s and epoch: %s" 
+          % (self.save_path[0], start_epoch))
+      return start_epoch
+    else:
+      print("Training from scratch")
+      return 1
 
   # (Updated)
   def log_loss_accuracy(self, loss, accuracy, epoch, prefix,
@@ -173,7 +196,7 @@ class DenseNet3D:
     self.videos = tf.placeholder(
       tf.float32,
       shape=shape,
-      name='input_images')
+      name='input_videos')
     self.labels = tf.placeholder(
       tf.float32,
       shape=[None, self.n_classes],
@@ -231,9 +254,9 @@ class DenseNet3D:
         bottleneck_out, out_features=growth_rate, kernel_size=3)
     # concatenate _input with out from composite function
     if TF_VERSION >= 1.0:
-      output = tf.concat(axis=3, values=(_input, comp_out))
+      output = tf.concat(axis=4, values=(_input, comp_out))
     else:
-      output = tf.concat(3, (_input, comp_out))
+      output = tf.concat(4, (_input, comp_out))
     return output
 
   # (Updated)
@@ -246,16 +269,15 @@ class DenseNet3D:
     return output
 
   # (Updated)
-  def transition_layer(self, _input):
-    """Call H_l composite function with 1x1 kernel and after average
-    pooling
+  def transition_layer(self, _input, pool_depth=2):
+    """Call H_l composite function with 1x1 kernel and pooling
     """
     # call composite function with 1x1 kernel
     out_features = int(int(_input.get_shape()[-1]) * self.reduction)
     output = self.composite_function(
       _input, out_features=out_features, kernel_size=1)
-    # run average pooling
-    output = self.avg_pool(output, k=2)
+    # run pooling
+    output = self.pool(output, k=2, d=pool_depth)
     return output
 
   # (Updated)
@@ -263,16 +285,17 @@ class DenseNet3D:
     """This is last transition to get probabilities by classes. It perform:
     - batch normalization
     - ReLU nonlinearity
-    - wide average pooling
+    - wide pooling
     - FC layer multiplication
     """
     # BN
     output = self.batch_norm(_input)
     # ReLU
     output = tf.nn.relu(output)
-    # average pooling
+    # pooling
     last_pool_kernel = int(output.get_shape()[-2])
-    output = self.avg_pool(output, k=last_pool_kernel)
+    last_sequence_length = int(output.get_shape()[1])
+    output = self.pool(output, k=last_pool_kernel, d=last_sequence_length)
     # FC
     features_total = int(output.get_shape()[-1])
     output = tf.reshape(output, [-1, features_total])
@@ -293,7 +316,7 @@ class DenseNet3D:
     return output
 
   # (Updated)
-  def avg_pool(self, _input, k, d=2):
+  def pool(self, _input, k, d=2):
     ksize = [1, d, k, k, 1]
     strides = [1, d, k, k, 1]
     padding = 'VALID'
@@ -326,18 +349,65 @@ class DenseNet3D:
       shape=shape,
       initializer=tf.contrib.layers.variance_scaling_initializer())
 
+  # (Updated)
   def weight_variable_xavier(self, shape, name):
     return tf.get_variable(
       name,
       shape=shape,
       initializer=tf.contrib.layers.xavier_initializer())
 
+  # (Updated)
   def bias_variable(self, shape, name='bias'):
     initial = tf.constant(0.0, shape=shape)
     return tf.get_variable(name, initializer=initial)
 
-  # (Updated)
-  def _build_graph(self):
+
+  def average_gradients(self, tower_grads):
+    """Calculate the average gradient for each shared variable across all towers.
+
+    Note that this function provides a synchronization point across all towers.
+
+    Args:
+      tower_grads: List of lists of (gradient, variable) tuples. The outer list
+        is over individual gradients. The inner list is over the gradient
+        calculation for each tower.
+    Returns:
+      List of pairs of (gradient, variable) where the gradient has been averaged
+      across all towers.
+    """
+    average_grads = []
+    for grad_and_vars in zip(*tower_grads):
+      # Note that each grad_and_vars looks like the following:
+      #   ((grad0_gpu0, var0_gpu0), ... , (grad0_gpuN, var0_gpuN))
+      grads = []
+      for g, _ in grad_and_vars:
+        # Add 0 dimension to the gradients to represent the tower.
+        expanded_g = tf.expand_dims(g, 0)
+
+        # Append on a 'tower' dimension which we will average over below.
+        grads.append(expanded_g)
+
+      # Average over the 'tower' dimension.
+      grad = tf.concat(axis=0, values=grads)
+      grad = tf.reduce_mean(grad, 0)
+
+      # Keep in mind that the Variables are redundant because they are shared
+      # across towers. So .. we will just return the first tower's pointer to
+      # the Variable.
+      v = grad_and_vars[0][1]
+      grad_and_var = (grad, v)
+      average_grads.append(grad_and_var)
+    return average_grads
+
+  def tower_loss_acc(self):
+    """Calculate the total loos and accuracy on a single tower running the model.
+
+    Args:
+      scope: unique prefix string identifying the tower, e.g. 'tower_0'
+
+    Returns:
+      Tensor of shapes [] containing the total loss for a batch of data.
+    """
     growth_rate = self.growth_rate
     layers_per_block = self.layers_per_block
     # first - initial 3 x 3 x 3 conv to first_output_features
@@ -354,7 +424,8 @@ class DenseNet3D:
       # last block exist without transition layer
       if block != self.total_blocks - 1:
         with tf.variable_scope("Transition_after_block_%d" % block):
-          output = self.transition_layer(output)
+          pool_depth = 1 if block == 0 else 2
+          output = self.transition_layer(output, pool_depth)
 
     with tf.variable_scope("Transition_to_classes"):
       logits = self.trainsition_layer_to_classes(output)
@@ -363,34 +434,82 @@ class DenseNet3D:
     # Losses
     cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
       logits=logits, labels=self.labels))
-    self.cross_entropy = cross_entropy
     l2_loss = tf.add_n(
       [tf.nn.l2_loss(var) for var in tf.trainable_variables()])
 
-    # Optimizer and train step
-    optimizer = tf.train.MomentumOptimizer(
-      self.learning_rate, self.nesterov_momentum, use_nesterov=True)
-    self.train_step = optimizer.minimize(
-      cross_entropy + l2_loss * self.weight_decay)
-
+    # Accuracy
     correct_prediction = tf.equal(
       tf.argmax(prediction, 1),
       tf.argmax(self.labels, 1))
-    self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+    return cross_entropy, l2_loss, accuracy
+
+  # (Updated)
+  def _build_graph(self):
+    # Optimizer and train step
+    optimizer = tf.train.MomentumOptimizer(
+      self.learning_rate, self.nesterov_momentum, use_nesterov=True)
+
+    # Calculate the gradients for each GPU tower
+    tower_grads     = []
+    tower_accuracys = []
+    tower_loss      = []
+
+    for gpu_index in range(self.gpu_num):
+      with tf.device('/gpu:%d' % gpu_index):
+        with tf.name_scope('%s_%d' % ('tower', gpu_index)) as scope:
+          # Calculate the loss and accuracy for one tower for the model. This 
+          # function constructs the entire model but shares the variables 
+          # across all towers.
+          with tf.variable_scope("3d-denseNet") as dense_scope:
+            try:
+              cross_entropy, l2_loss, accuracy = self.tower_loss_acc()
+            except ValueError:
+              dense_scope.reuse_variables()
+              cross_entropy, l2_loss, accuracy = self.tower_loss_acc()
+          # Calculate the gradients for the batch of data on this tower
+          grads = optimizer.compute_gradients(
+              cross_entropy + l2_loss * self.weight_decay
+            )
+          # Keep track of the gradients across all towers
+          tower_grads.append(grads)
+          # Keep track of the accuracy across all towers
+          tower_accuracys.append(accuracy)
+          # Keep track of the cross entropy across all towers
+          tower_loss.append(cross_entropy)
+
+    # We must calculate the mean of each gradient. Note that this is the
+    # synchronization point across all tower
+    grads = self.average_gradients(tower_grads)
+    self.accuracy = tf.reduce_mean(tf.stack(tower_accuracys))
+    self.cross_entropy = tf.reduce_mean(tf.stack(tower_loss))
+    self.train_step = optimizer.apply_gradients(grads)
+
 
   # (Updated)
   def train_all_epochs(self, train_params):
-    n_epochs = train_params['n_epochs']
-    learning_rate = train_params['initial_learning_rate']
-    batch_size = train_params['batch_size']
-    reduce_lr_epoch_1 = train_params['reduce_lr_epoch_1']
-    reduce_lr_epoch_2 = train_params['reduce_lr_epoch_2']
-    total_start_time = time.time()
-    for epoch in range(1, n_epochs + 1):
+    n_epochs           = train_params['n_epochs']
+    init_learning_rate = train_params['initial_learning_rate']
+    batch_size         = train_params['batch_size']
+    reduce_lr_epoch_1  = train_params['reduce_lr_epoch_1']
+    reduce_lr_epoch_2  = train_params['reduce_lr_epoch_2']
+    total_start_time   = time.time()
+
+    # Restore the model if we have
+    start_epoch = self.load_model()
+    
+    # Start training 
+    for epoch in range(start_epoch, n_epochs + 1):
       print("\n", '-' * 30, "Train epoch: %d" % epoch, '-' * 30, '\n')
       start_time = time.time()
-      if epoch == reduce_lr_epoch_1 or epoch == reduce_lr_epoch_2:
+      learning_rate = init_learning_rate
+      # Update the learning rate according to the decay parameter
+      if epoch >= reduce_lr_epoch_1 and epoch < reduce_lr_epoch_2:
         learning_rate = learning_rate / 10
+        print("Decrease learning rate, new lr = %f" % learning_rate)
+      elif epoch >= reduce_lr_epoch_2:
+        learning_rate = learning_rate / 100
         print("Decrease learning rate, new lr = %f" % learning_rate)
 
       print("Training...")
@@ -413,7 +532,7 @@ class DenseNet3D:
         str(timedelta(seconds=seconds_left))))
 
       if self.should_save_model:
-        self.save_model()
+        self.save_model(global_step=epoch)
 
     total_training_time = time.time() - total_start_time
     print("\nTotal training time: %s" % str(timedelta(
@@ -458,7 +577,7 @@ class DenseNet3D:
     for i in range(num_examples // batch_size):
       batch = data.next_batch(batch_size)
       feed_dict = {
-        self.images: batch[0],
+        self.videos: batch[0],
         self.labels: batch[1],
         self.is_training: False,
       }
