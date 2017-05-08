@@ -7,5 +7,6 @@ TODO
 .vscode
 *.txt
 *.out
-*.list
+test.list
+train.list
 *.DS_Store
