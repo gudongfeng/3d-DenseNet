@@ -110,7 +110,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--not-renew-logs', dest='renew_logs', action='store_false',
         help='Do not erase previous logs for model if exists.')
-    parser.set_defaults(renew_logs=True)
+    parser.set_defaults(renew_logs=False)
 
     args = parser.parse_args()
 
