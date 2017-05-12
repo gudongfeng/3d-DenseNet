@@ -10,14 +10,13 @@ train_params_merl = {
     'n_epochs': 100,
     'crop_size': 64,
     'sequence_length': 16,
-    'overlap_length': 6,
     'initial_learning_rate': 0.1,
     'reduce_lr_epoch_1': 50,  # epochs * 0.5
     'reduce_lr_epoch_2': 75,  # epochs * 0.75
     'validation_set': True,
     'validation_split': None,  # None or float
     'shuffle': True,  # None, once_prior_train, every_epoch
-    'normalization': 'by_channels',  # None, divide_256, divide_255, by_channels
+    'normalization': 'std',  # None, divide_256, divide_255, std
 }
 
 train_params_ucf101 = {
@@ -26,7 +25,6 @@ train_params_ucf101 = {
     'n_epochs': 40,
     'crop_size': 64,
     'sequence_length': 16,
-    'overlap_length': 8,
     'initial_learning_rate': 0.1,
     'reduce_lr_epoch_1': 20,
     'reduce_lr_epoch_2': 30,
