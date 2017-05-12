@@ -54,14 +54,14 @@ class Data(VideosDataset):
     s_index = 0
     for parent, dirnames, filenames in os.walk(filename):
       if(len(filenames) < num_frames_per_clip):
-        return [], s_index
+        return None
       filenames = sorted(filenames)
       s_index = random.randint(0, len(filenames) - num_frames_per_clip)
       for i in range(s_index, s_index + num_frames_per_clip):
         image_name = str(filename) + '/' + str(filenames[i])
         img = Image.open(image_name)
         img = img.resize((self.crop_size, self.crop_size))
-        img_data = np.array(img).astype(float)
+        img_data = np.array(img)
         video.append(img_data)
     return video
 
@@ -89,8 +89,9 @@ class Data(VideosDataset):
         labels.append(int(label))
       if len(videos) is batch_size:
         if self.normalization:
-          videos = np.array(videos)
-          videos = self.normalize_videos(videos, self.normalization)
+          video_slide = np.array(videos).astype(float)
+            #import pdb; pdb.set_trace()
+          videos = self.normalize_videos(video_slide, self.normalization)
         # convert labels to one hot version
         labels = np.array(labels)
         labels = self.labels_to_one_hot(labels, self.num_classes)
