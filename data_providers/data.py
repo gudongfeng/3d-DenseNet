@@ -99,7 +99,7 @@ class Data(VideosDataset):
 
     # reach the end of the paths, start a new epoch
     self.start_new_epoch()
-    self.next_batch(batch_size)
+    return self.next_batch(batch_size)
 
 
 class DataProvider(DataProvider):
