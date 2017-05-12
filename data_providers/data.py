@@ -61,7 +61,9 @@ class Data(VideosDataset):
         image_name = str(filename) + '/' + str(filenames[i])
         img = Image.open(image_name)
         img = img.resize((self.crop_size, self.crop_size))
-        img_data = np.array(img)
+        img_data = np.array(img).astype(float)
+        if self.normalization:
+          img_data = self.normalize_videos(img_data, self.normalization)
         video.append(img_data)
     return video
 
@@ -88,10 +90,7 @@ class Data(VideosDataset):
         videos.append(video)
         labels.append(int(label))
       if len(videos) is batch_size:
-        if self.normalization:
-          video_slide = np.array(videos).astype(float)
-            #import pdb; pdb.set_trace()
-          videos = self.normalize_videos(video_slide, self.normalization)
+        videos = np.array(videos)
         # convert labels to one hot version
         labels = np.array(labels)
         labels = self.labels_to_one_hot(labels, self.num_classes)

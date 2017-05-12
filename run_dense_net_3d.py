@@ -16,7 +16,7 @@ train_params_merl = {
     'validation_set': True,
     'validation_split': None,  # None or float
     'shuffle': True,  # None, once_prior_train, every_epoch
-    'normalization': 'divide_255',  # None, divide_256, divide_255
+    'normalization': 'std',  # None, divide_256, divide_255, std
 }
 
 train_params_ucf101 = {

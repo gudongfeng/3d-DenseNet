@@ -16,21 +16,25 @@ class DataSet:
 class VideosDataset(DataSet):
   """Dataset for videos that provide some often used methods"""
 
-  def normalize_videos(self, videos, normalization_type):
+  def normalize_videos(self, image, normalization_type):
     """
     Args:
-      videos: numpy 5D array
+      image: numpy 3D array
       normalization_type: `str`, available choices:
         - divide_255
         - divide_256
+        - std: (x - mean)/std
     """
     if normalization_type == 'divide_255':
-      videos = videos/255
+      image = image/255
     elif normalization_type == 'divide_256':
-      videos = videos/256
+      image = image/256
+    elif normalization_type == 'std':
+      tmp = image
+      image = (image - np.mean(tmp))/np.std(tmp)
     else:
       raise Exception("Unknow type of normalization")
-    return videos
+    return image
 
   def labels_to_one_hot(self, labels, num_classes):
     """Convert 1D array of labels to one hot representation
