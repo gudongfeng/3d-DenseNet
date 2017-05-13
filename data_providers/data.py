@@ -63,7 +63,7 @@ class Data(VideosDataset):
         img = img.resize((self.crop_size, self.crop_size))
         img_data = np.array(img).astype(float)
         if self.normalization:
-          img_data = self.normalize_videos(img_data, self.normalization)
+          img_data = self.normalize_image(img_data, self.normalization)
         video.append(img_data)
     return video
 
@@ -86,7 +86,7 @@ class Data(VideosDataset):
     for line in videos_labels_slice:
       video_path, label = line.strip('\n').split()
       video = self.get_frames_data(video_path, self.sequence_length)
-      if video is not None:
+      if video is not None and len(video) == self.sequence_length:
         videos.append(video)
         labels.append(int(label))
       if len(videos) is batch_size:

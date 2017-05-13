@@ -16,7 +16,7 @@ class DataSet:
 class VideosDataset(DataSet):
   """Dataset for videos that provide some often used methods"""
 
-  def normalize_videos(self, image, normalization_type):
+  def normalize_image(self, image, normalization_type):
     """
     Args:
       image: numpy 3D array
