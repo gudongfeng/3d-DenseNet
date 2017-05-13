@@ -7,12 +7,12 @@ from data_providers.utils import get_data_provider_by_name
 train_params_merl = {
     'num_classes': 5,
     'batch_size': 10,
-    'n_epochs': 100,
-    'crop_size': 64,
+    'n_epochs': 300,
+    'crop_size': 100,
     'sequence_length': 16,
     'initial_learning_rate': 0.1,
-    'reduce_lr_epoch_1': 50,  # epochs * 0.5
-    'reduce_lr_epoch_2': 75,  # epochs * 0.75
+    'reduce_lr_epoch_1': 150,  # epochs * 0.5
+    'reduce_lr_epoch_2': 225,  # epochs * 0.75
     'validation_set': True,
     'validation_split': None,  # None or float
     'shuffle': True,  # None, once_prior_train, every_epoch

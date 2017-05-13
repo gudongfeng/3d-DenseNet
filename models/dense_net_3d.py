@@ -13,7 +13,7 @@ TF_VERSION = float('.'.join(tf.__version__.split('.')[:2]))
 
 class DenseNet3D:
   def __init__(self, data_provider, growth_rate, depth,
-         total_blocks, keep_prob, gpu_id
+         total_blocks, keep_prob, gpu_id,
          weight_decay, nesterov_momentum, model_type, dataset,
          should_save_logs, should_save_model,
          renew_logs=False,
