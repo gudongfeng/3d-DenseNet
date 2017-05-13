@@ -366,7 +366,7 @@ class DenseNet3D:
     growth_rate = self.growth_rate
     layers_per_block = self.layers_per_block
     # first - initial 3 x 3 x 3 conv to first_output_features
-    with tf.device("/gpu:%i" % self.gpu_id):
+    with tf.device("/cpu:%i" % self.gpu_id):
       with tf.variable_scope("Initial_convolution"):
         output = self.conv3d(
           self.videos,
