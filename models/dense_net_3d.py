@@ -13,7 +13,7 @@ TF_VERSION = float('.'.join(tf.__version__.split('.')[:2]))
 
 class DenseNet3D:
   def __init__(self, data_provider, growth_rate, depth,
-         total_blocks, keep_prob,
+         total_blocks, keep_prob, gpu_id
          weight_decay, nesterov_momentum, model_type, dataset,
          should_save_logs, should_save_model,
          renew_logs=False,
@@ -45,40 +45,41 @@ class DenseNet3D:
       bc_mode: `bool`, should we use bottleneck layers and features
         reduction or not.
     """
-    self.data_provider = data_provider
-    self.data_shape = data_provider.data_shape
-    self.n_classes = data_provider.n_classes
-    self.depth = depth
-    self.growth_rate = growth_rate
+    self.data_provider          = data_provider
+    self.data_shape             = data_provider.data_shape
+    self.n_classes              = data_provider.n_classes
+    self.depth                  = depth
+    self.growth_rate            = growth_rate
     # how many features will be received after first convolution
     # value the same as in the original Torch code
-    self.first_output_features = growth_rate * 2
-    self.total_blocks = total_blocks
-    self.layers_per_block = (depth - (total_blocks + 1)) // total_blocks
+    self.first_output_features  = growth_rate * 2
+    self.total_blocks           = total_blocks
+    self.layers_per_block       = (depth - (total_blocks + 1)) // total_blocks
     self.bc_mode = bc_mode
     # compression rate at the transition layers
-    self.reduction = reduction
+    self.reduction              = reduction
     if not bc_mode:
       print("Build %s model with %d blocks, "
           "%d composite layers each." % (
             model_type, self.total_blocks, self.layers_per_block))
     if bc_mode:
-      self.layers_per_block = self.layers_per_block // 2
+      self.layers_per_block     = self.layers_per_block // 2
       print("Build %s model with %d blocks, "
           "%d bottleneck layers and %d composite layers each." % (
             model_type, self.total_blocks, self.layers_per_block,
             self.layers_per_block))
     print("Reduction at transition layers: %.1f" % self.reduction)
 
-    self.keep_prob = keep_prob
-    self.weight_decay = weight_decay
-    self.nesterov_momentum = nesterov_momentum
-    self.model_type = model_type
-    self.dataset_name = dataset
-    self.should_save_logs = should_save_logs
-    self.should_save_model = should_save_model
-    self.renew_logs = renew_logs
-    self.batches_step = 0
+    self.keep_prob          = keep_prob
+    self.gpu_id             = gpu_id
+    self.weight_decay       = weight_decay
+    self.nesterov_momentum  = nesterov_momentum
+    self.model_type         = model_type
+    self.dataset_name       = dataset
+    self.should_save_logs   = should_save_logs
+    self.should_save_model  = should_save_model
+    self.renew_logs         = renew_logs
+    self.batches_step       = 0
 
     self._define_inputs()
     self._build_graph()
@@ -365,43 +366,44 @@ class DenseNet3D:
     growth_rate = self.growth_rate
     layers_per_block = self.layers_per_block
     # first - initial 3 x 3 x 3 conv to first_output_features
-    with tf.variable_scope("Initial_convolution"):
-      output = self.conv3d(
-        self.videos,
-        out_features=self.first_output_features,
-        kernel_size=3)
+    with tf.device("/gpu:%i" % self.gpu_id):
+      with tf.variable_scope("Initial_convolution"):
+        output = self.conv3d(
+          self.videos,
+          out_features=self.first_output_features,
+          kernel_size=3)
 
-    # add N required blocks
-    for block in range(self.total_blocks):
-      with tf.variable_scope("Block_%d" % block):
-        output = self.add_block(output, growth_rate, layers_per_block)
-      # last block exist without transition layer
-      if block != self.total_blocks - 1:
-        with tf.variable_scope("Transition_after_block_%d" % block):
-          pool_depth = 1 if block == 0 else 2
-          output = self.transition_layer(output, pool_depth)
+      # add N required blocks
+      for block in range(self.total_blocks):
+        with tf.variable_scope("Block_%d" % block):
+          output = self.add_block(output, growth_rate, layers_per_block)
+        # last block exist without transition layer
+        if block != self.total_blocks - 1:
+          with tf.variable_scope("Transition_after_block_%d" % block):
+            pool_depth = 1 if block == 0 else 2
+            output = self.transition_layer(output, pool_depth)
 
-    with tf.variable_scope("Transition_to_classes"):
-      logits = self.trainsition_layer_to_classes(output)
-    prediction = tf.nn.softmax(logits)
+      with tf.variable_scope("Transition_to_classes"):
+        logits = self.trainsition_layer_to_classes(output)
+      prediction = tf.nn.softmax(logits)
 
-    # Losses
-    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-      logits=logits, labels=self.labels))
-    self.cross_entropy = cross_entropy
-    l2_loss = tf.add_n(
-      [tf.nn.l2_loss(var) for var in tf.trainable_variables()])
+      # Losses
+      cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
+        logits=logits, labels=self.labels))
+      self.cross_entropy = cross_entropy
+      l2_loss = tf.add_n(
+        [tf.nn.l2_loss(var) for var in tf.trainable_variables()])
 
-    # Optimizer and train step
-    optimizer = tf.train.MomentumOptimizer(
-      self.learning_rate, self.nesterov_momentum, use_nesterov=True)
-    self.train_step = optimizer.minimize(
-      cross_entropy + l2_loss * self.weight_decay)
+      # Optimizer and train step
+      optimizer = tf.train.MomentumOptimizer(
+        self.learning_rate, self.nesterov_momentum, use_nesterov=True)
+      self.train_step = optimizer.minimize(
+        cross_entropy + l2_loss * self.weight_decay)
 
-    correct_prediction = tf.equal(
-      tf.argmax(prediction, 1),
-      tf.argmax(self.labels, 1))
-    self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+      correct_prediction = tf.equal(
+        tf.argmax(prediction, 1),
+        tf.argmax(self.labels, 1))
+      self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
   # (Updated)
   def train_all_epochs(self, train_params):
