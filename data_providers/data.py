@@ -3,51 +3,45 @@ import random
 import tempfile
 import numpy as np
 import PIL.Image as Image
+from Queue import Queue
+from threading import Thread
 
 from .base_provider import VideosDataset, DataProvider
 
-
 class Data(VideosDataset):
-  def __init__(self, paths, shuffle, normalization, sequence_length, 
+  def __init__(self, name, paths, normalization, sequence_length,
                crop_size, num_classes):
     """
     Args:
+      name: str, name of the data (train, test or validation)
       paths: list, list of string that have the video path and label 
         information
-      shuffle: boolean, whether shuffle the data at the new epoch or not
       sequence_length: video clip length
       crop_size: image resize size
       normalization: `str` or None
         None: no any normalization
         divide_255: divide all pixels by 255
         divide_256: divide all pixels by 256
+      num_classes: integer, number of classes that the dataset has
     """
-    self.paths = paths
-    self.shuffle = shuffle
-    self.normalization = normalization
-    self.sequence_length = sequence_length
-    self.crop_size = crop_size
-    self.num_classes = num_classes
-    self.start_new_epoch()
-
-  def start_new_epoch(self):
-    self._batch_counter = 0
-    if self.shuffle:
-      random.shuffle(self.paths)
-
-  @property
-  def num_examples(self):
-    return len(self.paths)
+    self.name             = name
+    self.paths            = paths
+    self.normalization    = normalization
+    self.sequence_length  = sequence_length
+    self.crop_size        = crop_size
+    self.num_classes      = num_classes
+    self.queue            = DataQueue(name, 1000)
+    self._start_data_thread()
 
   def get_frames_data(self, filename, num_frames_per_clip=16):
     ''' Given a directory containing extracted frames, return a video clip of
-    (num_frames_per_clip) consecutive frames as a list of np arrays 
+    (num_frames_per_clip) consecutive frames as a list of np arrays
     
     Args
-      num_frames_per_clip: sequence_length of the video clip 
+      num_frames_per_clip: sequence_length of the video clip
     
     Returns
-      video: numpy, video clip with shape 
+      video: numpy, video clip with shape
         [sequence_length, crop_size, crop_size, channels]
     '''
     video = []
@@ -67,6 +61,30 @@ class Data(VideosDataset):
         video.append(img_data)
     return video
 
+  def extract_video_data(self):
+    ''' Single tread to extract video and label information from the dataset
+    '''
+    # Generate one randome index and 
+    while True:
+      index = random.randint(0, len(self.paths)-1)
+      video_path, label = self.paths[index].strip('\n').split()
+      video = self.get_frames_data(video_path, self.sequence_length)
+      if video is not None and len(video) == self.sequence_length:
+        # Put the video into the queue
+        video = np.array(video)
+        label = np.array(int(label))
+        self.queue.put((video, label))
+
+  def _start_data_thread(self):
+    print("Start thread: %s data preparation ..." % self.name)
+    self.worker = Thread(target=self.extract_video_data)
+    self.worker.setDaemon(True)
+    self.worker.start()
+
+  @property
+  def num_examples(self):
+    return len(self.paths)
+
   def next_batch(self, batch_size):
     ''' Get the next batches of the dataset 
     Args
@@ -78,34 +96,62 @@ class Data(VideosDataset):
       labels: numpy
         [batch_size, num_classes]
     '''
-    start = self._batch_counter * batch_size
-    self._batch_counter += 1
-    videos_labels_slice = self.paths[start:]
+    videos, labels = self.queue.get(batch_size)
+    videos = np.array(videos)
+    labels = np.array(labels)
+    labels = self.labels_to_one_hot(labels, self.num_classes)
+    return videos, labels
+
+
+class DataQueue():
+  def __init__(self, name, maximum_item, block=True):
+    """
+    Args
+      name: str, data type name (train, validation or test)
+      maximum_item: integer, maximum item that this queue can store
+      block: boolean, block the put or get information if the queue is
+        full or empty
+    """
+    self.name         = name
+    self.block        = block
+    self.maximum_item = maximum_item
+    self.queue        = Queue(maximum_item)
+
+  @property
+  def queue(self):
+    return self.queue
+
+  @property
+  def name(self):
+    return self.name
+
+  def put(self, data):
+    self.queue.put(data, self.block)
+
+  def get(self, batch_size):
+    '''
+    Args:
+      batch_size: integer, the number of the item you want to get from the queue
+    
+    Returns:
+      videos: list, list of numpy data with shape
+        [sequence_length, crop_size, crop_size, channels]
+      labels: list, list of integer number
+    '''
     videos = []
     labels = []
-    for line in videos_labels_slice:
-      video_path, label = line.strip('\n').split()
-      video = self.get_frames_data(video_path, self.sequence_length)
-      if video is not None and len(video) == self.sequence_length:
-        videos.append(video)
-        labels.append(int(label))
-      if len(videos) is batch_size:
-        videos = np.array(videos)
-        # convert labels to one hot version
-        labels = np.array(labels)
-        labels = self.labels_to_one_hot(labels, self.num_classes)
-        # return the videos and labels data
-        return videos, labels
-
-    # reach the end of the paths, start a new epoch
-    self.start_new_epoch()
-    return self.next_batch(batch_size)
+    for i in range(batch_size):
+      video, label = self.queue.get(self.block)
+      videos.append(video)
+      labels.append(label)
+    return videos, labels
 
 
 class DataProvider(DataProvider):
-  def __init__(self, num_classes, validation_set=None, shuffle=False,
+  def __init__(self, num_classes, validation_set=None, test=False,
                validation_split=None, normalization=None, crop_size=64,
-               sequence_length=16, **kwargs):
+               sequence_length=16, train_queue=None, valid_queue=None,
+               test_queue=None, **kwargs):
     """
     Args:
       num_classes: the number of the classes
@@ -114,7 +160,6 @@ class DataProvider(DataProvider):
           float: chunk of `train set` will be marked as `validation set`.
           None: if 'validation set' == True, `validation set` will be
               copy of `test set`
-      shuffle: `bool`, should shuffle data or not
       normalization: `str` or None
           None: no any normalization
           divide_255: divide all pixels by 255
@@ -126,31 +171,32 @@ class DataProvider(DataProvider):
     self._sequence_length = sequence_length
     self._crop_size = crop_size
     train_videos_labels = self.get_videos_labels_lines(
-      'data_providers/train.list', shuffle)
+      'data_providers/train.list')
     test_videos_labels = self.get_videos_labels_lines(
-      'data_providers/test.list', shuffle)
+      'data_providers/test.list')
     if validation_set and validation_split:
       random.shuffle(train_videos_labels)
       valid_videos_labels = train_videos_labels[:validation_split]
       train_videos_labels = train_videos_labels[validation_split:]
-      self.validation = Data(valid_videos_labels, shuffle, 
+      self.validation = Data('validation', valid_videos_labels,
                              normalization, sequence_length,
                              crop_size, num_classes)
-    self.train = Data(train_videos_labels, shuffle, 
+    self.train = Data('train', train_videos_labels,
                       normalization, sequence_length,
                       crop_size, num_classes)
-    self.test = Data(test_videos_labels, shuffle, 
-                     normalization, sequence_length,
-                     crop_size, num_classes)
+    if test:
+      self.test = Data('test', test_videos_labels,
+                      normalization, sequence_length,
+                      crop_size, num_classes)
     if validation_set and not validation_split:
-      self.validation = self.test
+      self.validation = Data('validation', test_videos_labels,
+                             normalization, sequence_length,
+                             crop_size, num_classes)
 
-  def get_videos_labels_lines(self, path, shuffle):
+  def get_videos_labels_lines(self, path):
     # Open the file according to the filename
     lines = open(path, 'r')
     lines = list(lines)
-    if shuffle:
-      random.shuffle(lines)
     return lines
 
   @property
