@@ -31,6 +31,7 @@ class Data(VideosDataset):
     self.crop_size        = crop_size
     self.num_classes      = num_classes
     self.queue            = DataQueue(name, 1000)
+    self.examples         = None
     self._start_data_thread()
 
   def get_frames_data(self, filename, num_frames_per_clip=16):
@@ -83,7 +84,15 @@ class Data(VideosDataset):
 
   @property
   def num_examples(self):
-    return len(self.paths)
+    if not self.examples:
+      # calculate the number of examples
+      total = 0
+      for line in self.paths:
+        video_path, _ = line.strip('\n').split()
+        for root, dirs, files in os.walk(video_path):
+          total += len(files)
+      self.examples = total / self.sequence_length
+    return self.examples
 
   def next_batch(self, batch_size):
     ''' Get the next batches of the dataset 
