@@ -146,8 +146,9 @@ class DataQueue():
       labels.append(label)
     return videos, labels
 
+
 class DataProvider(DataProvider):
-  def __init__(self, num_classes, validation_set=None,
+  def __init__(self, num_classes, validation_set=None, test=False,
                validation_split=None, normalization=None, crop_size=64,
                sequence_length=16, train_queue=None, valid_queue=None,
                test_queue=None, **kwargs):
@@ -165,9 +166,6 @@ class DataProvider(DataProvider):
           divide_256: divide all pixels by 256
       sequence_length: `integer`, video clip length
       crop_size: `integer`, the size that you want to reshape the images
-      train_queue: Queue, the training data queue
-      valid_queue: Queue, the valid data queue
-      test_queue: Queue, the test data queue
     """
     self._num_classes = num_classes
     self._sequence_length = sequence_length
@@ -186,9 +184,10 @@ class DataProvider(DataProvider):
     self.train = Data('train', train_videos_labels,
                       normalization, sequence_length,
                       crop_size, num_classes)
-    self.test = Data('test', test_videos_labels,
-                     normalization, sequence_length,
-                     crop_size, num_classes)
+    if test:
+      self.test = Data('test', test_videos_labels,
+                      normalization, sequence_length,
+                      crop_size, num_classes)
     if validation_set and not validation_split:
       self.validation = Data('validation', test_videos_labels,
                              normalization, sequence_length,

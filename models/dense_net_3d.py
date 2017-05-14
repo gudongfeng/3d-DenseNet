@@ -15,10 +15,8 @@ class DenseNet3D:
   def __init__(self, data_provider, growth_rate, depth,
          total_blocks, keep_prob, gpu_id,
          weight_decay, nesterov_momentum, model_type, dataset,
-         should_save_logs, should_save_model,
-         renew_logs=False,
-         reduction=1.0,
-         bc_mode=False,
+         should_save_logs, should_save_model, test=False,
+         renew_logs=False, reduction=1.0, bc_mode=False,
          **kwargs):
     """
     Class to implement networks base on this paper
@@ -79,6 +77,7 @@ class DenseNet3D:
     self.should_save_logs   = should_save_logs
     self.should_save_model  = should_save_model
     self.renew_logs         = renew_logs
+    self.test               = test
     self.batches_step       = 0
 
     self._define_inputs()
@@ -416,7 +415,7 @@ class DenseNet3D:
 
     # Restore the model if we have
     start_epoch = self.load_model()
-    
+
     # Start training 
     for epoch in range(start_epoch, n_epochs + 1):
       print("\n", '-' * 30, "Train epoch: %d" % epoch, '-' * 30, '\n')
@@ -481,8 +480,8 @@ class DenseNet3D:
       if self.should_save_logs:
         self.batches_step += 1
         self.log_loss_accuracy(
-          loss, accuracy, self.batches_step, prefix='per_batch',
-          should_print=False)
+          loss, accuracy, self.batches_step,
+          prefix='per_batch', should_print=False)
     mean_loss = np.mean(total_loss)
     mean_accuracy = np.mean(total_accuracy)
     return mean_loss, mean_accuracy

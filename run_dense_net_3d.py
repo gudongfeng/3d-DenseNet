@@ -124,7 +124,6 @@ if __name__ == '__main__':
   elif args.model_type == 'DenseNet-BC':
     args.bc_mode = True
 
-  
   model_params = vars(args)
 
   if not args.train and not args.test:
@@ -154,6 +153,7 @@ if __name__ == '__main__':
   # ==========================================================================
   # DATA PREPARATION
   # ==========================================================================
+  train_params['test'] = args.test
   data_provider = get_data_provider_by_name(args.dataset, train_params)
 
   # ==========================================================================
