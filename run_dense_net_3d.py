@@ -1,5 +1,6 @@
 import sys
 import argparse
+import numpy as np
 
 from models.dense_net_3d import DenseNet3D
 from data_providers.utils import get_data_provider_by_name
@@ -169,6 +170,13 @@ if __name__ == '__main__':
       model.load_model()
     print("Data provider test videos: ", data_provider.test.num_examples)
     print("Testing...")
-    loss, accuracy = model.test(data_provider.test, batch_size=50)
+    losses = []
+    accuracies = []
+    for i in range(10):
+      loss, accuracy = model.test(data_provider.test, batch_size=10)
+      losses.append(loss)
+      accuracies.append(accuracy)
+    loss     = np.mean(losses)
+    accuracy = np.mean(accuracies)
     print("mean cross_entropy: %f, mean accuracy: %f" % (loss, accuracy))
 
