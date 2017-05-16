@@ -9,7 +9,7 @@ train_params_merl = {
   'num_classes': 5,
   'batch_size': 10,
   'n_epochs': 100,
-  'crop_size': 100,
+  'crop_size': 128,
   'sequence_length': 16,
   'initial_learning_rate': 0.1,
   'reduce_lr_epoch_1': 50,  # epochs * 0.5
