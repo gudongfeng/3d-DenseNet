@@ -213,38 +213,30 @@ class DenseNet3D:
     - convolution with required kernel
     - dropout, if required
     """
-    with tf.name_scope("composite_function"):
-      with tf.variable_scope("composite_function"):
-        # BN
-        with tf.name_scope("batch_normalization"):
-          output = self.batch_norm(_input)
-        # ReLU
-        with tf.name_scope("ReLU"):
-          output = tf.nn.relu(output)
-        # convolution
-        with tf.name_scope("3DConv"):
-          output = self.conv3d(
-            output, out_features=out_features, kernel_size=kernel_size)
-          # dropout(in case of training and in case it is no 1.0)
-        with tf.name_scope("dropout"):
-          output = self.dropout(output)
+    with tf.variable_scope("composite_function"):
+      # BN
+      output = self.batch_norm(_input)
+      # ReLU
+      with tf.name_scope("ReLU"):
+        output = tf.nn.relu(output)
+      # convolution
+      output = self.conv3d(
+        output, out_features=out_features, kernel_size=kernel_size)
+        # dropout(in case of training and in case it is no 1.0)
+      output = self.dropout(output)
     return output
 
   # (Updated)
   def bottleneck(self, _input, out_features):
-    with tf.name_scope("bottleneck"):
-      with tf.variable_scope("bottleneck"):
-        with tf.name_scope("batch_normalization"):
-          output = self.batch_norm(_input)
-        with tf.name_scope("ReLU"):
-          output = tf.nn.relu(output)
-        inter_features = out_features * 4
-        with tf.name_scope("3DConv"):
-          output = self.conv3d(
-            output, out_features=inter_features, kernel_size=1,
-            padding='VALID')
-        with tf.name_scope("dropout"):
-          output = self.dropout(output)
+    with tf.variable_scope("bottleneck"):
+      output = self.batch_norm(_input)
+      with tf.name_scope("ReLU"):
+        output = tf.nn.relu(output)
+      inter_features = out_features * 4
+      output = self.conv3d(
+        output, out_features=inter_features, kernel_size=1,
+        padding='VALID')
+      output = self.dropout(output)
     return output
 
   # (Updated)
@@ -273,9 +265,8 @@ class DenseNet3D:
     """Add N H_l internal layers"""
     output = _input
     for layer in range(layers_per_block):
-      with tf.name_scope("layer_%d" % layer):
-        with tf.variable_scope("layer_%d" % layer):
-          output = self.add_internal_layer(output, growth_rate)
+      with tf.variable_scope("layer_%d" % layer):
+        output = self.add_internal_layer(output, growth_rate)
     return output
 
   # (Updated)
@@ -300,8 +291,7 @@ class DenseNet3D:
     - FC layer multiplication
     """
     # BN
-    with tf.name_scope("batch_normalization"):
-      output = self.batch_norm(_input)
+    output = self.batch_norm(_input)
     # ReLU
     with tf.name_scope("ReLU"):
       output = tf.nn.relu(output)
@@ -327,7 +317,8 @@ class DenseNet3D:
     kernel = self.weight_variable_msra(
       [kernel_size, kernel_size, kernel_size, in_features, out_features],
       name='kernel')
-    output = tf.nn.conv3d(_input, kernel, strides, padding)
+    with tf.name_scope("3DConv"):
+      output = tf.nn.conv3d(_input, kernel, strides, padding)
     return output
 
   # (Updated)
@@ -340,19 +331,21 @@ class DenseNet3D:
 
   # (Updated)
   def batch_norm(self, _input):
-    output = tf.contrib.layers.batch_norm(
-      _input, scale=True, is_training=self.is_training,
-      updates_collections=None)
+    with tf.name_scope("batch_normalization"):
+      output = tf.contrib.layers.batch_norm(
+        _input, scale=True, is_training=self.is_training,
+        updates_collections=None)
     return output
 
   # (Updated)
   def dropout(self, _input):
     if self.keep_prob < 1:
-      output = tf.cond(
-        self.is_training,
-        lambda: tf.nn.dropout(_input, self.keep_prob),
-        lambda: _input
-      )
+      with tf.name_scope('dropout'):
+        output = tf.cond(
+          self.is_training,
+          lambda: tf.nn.dropout(_input, self.keep_prob),
+          lambda: _input
+        )
     else:
       output = _input
     return output
@@ -382,28 +375,24 @@ class DenseNet3D:
     layers_per_block = self.layers_per_block
     # first - initial 3 x 3 x 3 conv to first_output_features
     with tf.device("/gpu:%i" % self.gpu_id):
-      with tf.name_scope('3DConv'):
-        with tf.variable_scope("Initial_convolution"):
-          output = self.conv3d(
-            self.videos,
-            out_features=self.first_output_features,
-            kernel_size=3)
+      with tf.variable_scope("Initial_convolution"):
+        output = self.conv3d(
+          self.videos,
+          out_features=self.first_output_features,
+          kernel_size=3)
 
       # add N required blocks
       for block in range(self.total_blocks):
-        with tf.name_scope("Block_%d" % block):
-          with tf.variable_scope("Block_%d" % block):
-            output = self.add_block(output, growth_rate, layers_per_block)
+        with tf.variable_scope("Block_%d" % block):
+          output = self.add_block(output, growth_rate, layers_per_block)
         # last block exist without transition layer
         if block != self.total_blocks - 1:
-          with tf.name_scope("Transition_after_block_%d" % block):
-            with tf.variable_scope("Transition_after_block_%d" % block):
-              pool_depth = 1 if block == 0 else 2
-              output = self.transition_layer(output, pool_depth)
+          with tf.variable_scope("Transition_after_block_%d" % block):
+            pool_depth = 1 if block == 0 else 2
+            output = self.transition_layer(output, pool_depth)
 
-      with tf.name_scope("Transition_to_classes"):
-        with tf.variable_scope("Transition_to_classes"):
-          logits = self.trainsition_layer_to_classes(output)
+      with tf.variable_scope("Transition_to_classes"):
+        logits = self.trainsition_layer_to_classes(output)
       with tf.name_scope("softmax"):
         prediction = tf.nn.softmax(logits)
 
