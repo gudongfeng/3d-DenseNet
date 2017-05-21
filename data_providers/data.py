@@ -30,7 +30,7 @@ class Data(VideosDataset):
     self.sequence_length  = sequence_length
     self.crop_size        = crop_size
     self.num_classes      = num_classes
-    self.queue            = DataQueue(name, 1000)
+    self.queue            = DataQueue(name, 300)
     self.examples         = None
     self._start_data_thread()
 
