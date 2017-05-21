@@ -1,2 +1,2 @@
-cp test_micro.list test.list
-cp train_micro.list train.list
+cp micro_test.list test.list
+cp micro_train.list train.list
