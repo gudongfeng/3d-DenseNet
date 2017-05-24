@@ -370,48 +370,49 @@ class DenseNet3D:
   def _build_graph(self):
     growth_rate = self.growth_rate
     layers_per_block = self.layers_per_block
-    # first - initial 3 x 3 x 3 conv to first_output_features
-    with tf.variable_scope("Initial_convolution"):
-      output = self.conv3d(
-        self.videos,
-        out_features=self.first_output_features,
-        kernel_size=7,
-        strides=[1, 1, 2, 2, 1])
-      # first pooling
-      output = self.pool(output, k=3, d=3, k_stride=2, d_stride=1)
+    with tf.device("/gpu:%i" % self.gpu_id):
+      # first - initial 3 x 3 x 3 conv to first_output_features
+      with tf.variable_scope("Initial_convolution"):
+        output = self.conv3d(
+          self.videos,
+          out_features=self.first_output_features,
+          kernel_size=7,
+          strides=[1, 1, 2, 2, 1])
+        # first pooling
+        output = self.pool(output, k=3, d=3, k_stride=2, d_stride=1)
 
-    # add N required blocks
-    for block in range(self.total_blocks):
-      with tf.variable_scope("Block_%d" % block):
-        output = self.add_block(output, growth_rate, layers_per_block)
-      # last block exist without transition layer
-      if block != self.total_blocks - 1:
-        with tf.variable_scope("Transition_after_block_%d" % block):
-          #pool_depth = 1 if block == 0 else 2
-          pool_depth = 2
-          output = self.transition_layer(output, pool_depth)
+      # add N required blocks
+      for block in range(self.total_blocks):
+        with tf.variable_scope("Block_%d" % block):
+          output = self.add_block(output, growth_rate, layers_per_block)
+        # last block exist without transition layer
+        if block != self.total_blocks - 1:
+          with tf.variable_scope("Transition_after_block_%d" % block):
+            #pool_depth = 1 if block == 0 else 2
+            pool_depth = 2
+            output = self.transition_layer(output, pool_depth)
 
-    with tf.variable_scope("Transition_to_classes"):
-      logits = self.trainsition_layer_to_classes(output)
-    prediction = tf.nn.softmax(logits)
+      with tf.variable_scope("Transition_to_classes"):
+        logits = self.trainsition_layer_to_classes(output)
+      prediction = tf.nn.softmax(logits)
 
-    # Losses
-    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-      logits=logits, labels=self.labels))
-    self.cross_entropy = cross_entropy
-    l2_loss = tf.add_n(
-      [tf.nn.l2_loss(var) for var in tf.trainable_variables()])
+      # Losses
+      cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
+        logits=logits, labels=self.labels))
+      self.cross_entropy = cross_entropy
+      l2_loss = tf.add_n(
+        [tf.nn.l2_loss(var) for var in tf.trainable_variables()])
 
-    # Optimizer and train step
-    optimizer = tf.train.MomentumOptimizer(
-      self.learning_rate, self.nesterov_momentum, use_nesterov=True)
-    self.train_step = optimizer.minimize(
-      cross_entropy + l2_loss * self.weight_decay)
+      # Optimizer and train step
+      optimizer = tf.train.MomentumOptimizer(
+        self.learning_rate, self.nesterov_momentum, use_nesterov=True)
+      self.train_step = optimizer.minimize(
+        cross_entropy + l2_loss * self.weight_decay)
 
-    correct_prediction = tf.equal(
-      tf.argmax(prediction, 1),
-      tf.argmax(self.labels, 1))
-    self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+      correct_prediction = tf.equal(
+        tf.argmax(prediction, 1),
+        tf.argmax(self.labels, 1))
+      self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
   # (Updated)
   def train_all_epochs(self, train_params):
