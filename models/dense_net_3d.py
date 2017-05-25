@@ -306,12 +306,12 @@ class DenseNet3D:
     output = tf.reshape(output, [-1, features_total])
     W = self.weight_variable_xavier(
       [features_total, 1000], name='W')
-    b = self.bias_variable([1000])
+    b = self.bias_variable([1000], 'b')
     local = tf.nn.relu(tf.matmul(output, W) + b)
     local = self.dropout(local)
     weight = self.weight_variable_xavier(
       [1000, self.n_classes], name='weight')
-    bias = self.bias_variable([self.n_classes])
+    bias = self.bias_variable([self.n_classes], 'bias')
     logits = tf.matmul(local, weight) + bias
     return logits
   
