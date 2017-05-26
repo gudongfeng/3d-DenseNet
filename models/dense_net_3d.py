@@ -295,24 +295,24 @@ class DenseNet3D:
     last_sequence_length = int(output.get_shape()[1])
     output = self.pool(output, k=last_pool_kernel, d=last_sequence_length)
     # FC
-    # features_total = int(output.get_shape()[-1])
-    # output = tf.reshape(output, [-1, features_total])
-    # W = self.weight_variable_xavier(
-    #   [features_total, self.n_classes], name='W')
-    # bias = self.bias_variable([self.n_classes])
-    # logits = tf.matmul(output, W) + bias
-    # local
     features_total = int(output.get_shape()[-1])
     output = tf.reshape(output, [-1, features_total])
     W = self.weight_variable_xavier(
-      [features_total, 1000], name='W')
-    b = self.bias_variable([1000], 'b')
-    local = tf.nn.relu(tf.matmul(output, W) + b)
-    local = self.dropout(local)
-    weight = self.weight_variable_xavier(
-      [1000, self.n_classes], name='weight')
-    bias = self.bias_variable([self.n_classes], 'bias')
-    logits = tf.matmul(local, weight) + bias
+      [features_total, self.n_classes], name='W')
+    bias = self.bias_variable([self.n_classes])
+    logits = tf.matmul(output, W) + bias
+    # local
+    # features_total = int(output.get_shape()[-1])
+    # output = tf.reshape(output, [-1, features_total])
+    # W = self.weight_variable_xavier(
+    #   [features_total, 1000], name='W')
+    # b = self.bias_variable([1000], 'b')
+    # local = tf.nn.relu(tf.matmul(output, W) + b)
+    # local = self.dropout(local)
+    # weight = self.weight_variable_xavier(
+    #   [1000, self.n_classes], name='weight')
+    # bias = self.bias_variable([self.n_classes], 'bias')
+    # logits = tf.matmul(local, weight) + bias
     return logits
   
   # (Updated)

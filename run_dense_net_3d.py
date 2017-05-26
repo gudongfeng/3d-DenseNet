@@ -1,9 +1,14 @@
+import os
 import sys
 import argparse
 import numpy as np
 
 from models.dense_net_3d import DenseNet3D
 from data_providers.utils import get_data_provider_by_name
+
+# limit the usage of the GPU
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 train_params_merl = {
   'num_classes': 5,
@@ -21,16 +26,16 @@ train_params_merl = {
 
 train_params_ucf101 = {
   'num_classes': 101,
-  'batch_size': 64,
-  'n_epochs': 40,
-  'crop_size': 64,
+  'batch_size': 10,
+  'n_epochs': 70,
+  'crop_size': 128,
   'sequence_length': 16,
   'initial_learning_rate': 0.1,
-  'reduce_lr_epoch_1': 20,
-  'reduce_lr_epoch_2': 30,
+  'reduce_lr_epoch_1': 30,
+  'reduce_lr_epoch_2': 55,
   'validation_set': True,
   'validation_split': None,  # you may set it 6000 as in the paper
-  'normalization': 'divide_255',
+  'normalization': 'std',
 }
 
 
