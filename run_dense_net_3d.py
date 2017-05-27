@@ -22,13 +22,13 @@ train_params_merl = {
 
 train_params_ucf101 = {
   'num_classes': 101,
-  'batch_size': 64,
-  'n_epochs': 40,
-  'crop_size': 64,
+  'batch_size': 20,
+  'n_epochs': 100,
+  'crop_size': 128,
   'sequence_length': 16,
   'initial_learning_rate': 0.1,
-  'reduce_lr_epoch_1': 20,
-  'reduce_lr_epoch_2': 30,
+  'reduce_lr_epoch_1': 50,
+  'reduce_lr_epoch_2': 75,
   'validation_set': True,
   'validation_split': None,  # you may set it 6000 as in the paper
   'normalization': 'divide_255',
