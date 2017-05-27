@@ -78,7 +78,7 @@ if __name__ == '__main__':
     '--keep_prob', '-kp', type=float, metavar='',
     help="Keep probability for dropout.")
   parser.add_argument(
-    '--gpu_id', '-gid', type=str, default=0,
+    '--gpu_id', '-gid', type=str, default='0',
     help='Specify the gpu ID to run the program')
   parser.add_argument(
     '--weight_decay', '-wd', type=float, default=1e-4, metavar='',
