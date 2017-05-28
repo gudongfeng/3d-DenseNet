@@ -1,3 +1,4 @@
+import os
 import sys
 import argparse
 import numpy as np
@@ -76,7 +77,7 @@ if __name__ == '__main__':
     '--keep_prob', '-kp', type=float, metavar='',
     help="Keep probability for dropout.")
   parser.add_argument(
-    '--gpu_id', '-gid', type=int, default=0,
+    '--gpu_id', '-gid', type=str, default='0',
     help='Specify the gpu ID to run the program')
   parser.add_argument(
     '--weight_decay', '-wd', type=float, default=1e-4, metavar='',
@@ -130,6 +131,12 @@ if __name__ == '__main__':
   if not args.train and not args.test:
     print("You should train or test your network. Please check params.")
     exit()
+  
+  # ==========================================================================
+  # LIMITE THE USAGE OF THE GPU
+  # =========================================================================
+  os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+  os.environ["CUDA_VISIBLE_DEVICES"]=args.gpu_id
 
   # ==========================================================================
   # LOG FILE SETTING
