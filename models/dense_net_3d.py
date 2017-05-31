@@ -300,31 +300,31 @@ class DenseNet3D(object):
     with tf.name_scope("pooling"):
       output = self.pool(output, k=last_pool_kernel, d=last_sequence_length)
     # FC
-    # features_total = int(output.get_shape()[-1])
-    # output = tf.reshape(output, [-1, features_total])
-    # W = self.weight_variable_xavier(
-    #   [features_total, self.n_classes], name='W')
-    # bias = self.bias_variable([self.n_classes])
-    # logits = tf.matmul(output, W) + bias
-    # Local 
     features_total = int(output.get_shape()[-1])
     output = tf.reshape(output, [-1, features_total])
-    lc_weight = self.weight_variable_xavier(
-      [features_total, 100], name='lc_weight')
-    lc_bias = self.bias_variable([100], 'lc_bias')
-    local = tf.nn.relu(tf.matmul(output, lc_weight) + lc_bias)
-    local = self.dropout(local)
-    # Second Local
-    lc2_weight = self.weight_variable_xavier(
-      [100, 100], name='lc2_weight')
-    lc2_bias = self.bias_variable([100], 'lc2_bias')
-    local2 = tf.nn.relu(tf.matmul(local, lc2_weight) + lc2_bias)
-    local2 = self.dropout(local2)
-    # Classification
-    weight = self.weight_variable_xavier(
-      [100, self.n_classes], name='weight')
-    bias = self.bias_variable([self.n_classes], 'bias')
-    logits = tf.matmul(local2, weight) + bias
+    W = self.weight_variable_xavier(
+      [features_total, self.n_classes], name='W')
+    bias = self.bias_variable([self.n_classes])
+    logits = tf.matmul(output, W) + bias
+    # Local 
+    # features_total = int(output.get_shape()[-1])
+    # output = tf.reshape(output, [-1, features_total])
+    # lc_weight = self.weight_variable_xavier(
+    #   [features_total, 100], name='lc_weight')
+    # lc_bias = self.bias_variable([100], 'lc_bias')
+    # local = tf.nn.relu(tf.matmul(output, lc_weight) + lc_bias)
+    # local = self.dropout(local)
+    # # Second Local
+    # lc2_weight = self.weight_variable_xavier(
+    #   [100, 100], name='lc2_weight')
+    # lc2_bias = self.bias_variable([100], 'lc2_bias')
+    # local2 = tf.nn.relu(tf.matmul(local, lc2_weight) + lc2_bias)
+    # local2 = self.dropout(local2)
+    # # Classification
+    # weight = self.weight_variable_xavier(
+    #   [100, self.n_classes], name='weight')
+    # bias = self.bias_variable([self.n_classes], 'bias')
+    # logits = tf.matmul(local2, weight) + bias
     return logits
   
   # (Updated)
