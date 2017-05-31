@@ -13,10 +13,10 @@ TF_VERSION = float('.'.join(tf.__version__.split('.')[:2]))
 
 class DenseNet3D(object):
   def __init__(self, data_provider, growth_rate, depth,
-         total_blocks, keep_prob, dataset,
-         weight_decay, nesterov_momentum, model_type,
+         total_blocks, keep_prob, bc_mode=False,
+         weight_decay, nesterov_momentum, model_type, dataset,
          should_save_logs, should_save_model,
-         renew_logs=False, reduction=1.0, bc_mode=False,
+         renew_logs=False, reduction=1.0,
          **kwargs):
     """
     Class to implement networks base on this paper
@@ -304,19 +304,19 @@ class DenseNet3D(object):
     features_total = int(output.get_shape()[-1])
     output = tf.reshape(output, [-1, features_total])
     lc_weight = self.weight_variable_xavier(
-      [features_total, 1000], name='lc_weight')
-    lc_bias = self.bias_variable([1000], 'lc_bias')
+      [features_total, 100], name='lc_weight')
+    lc_bias = self.bias_variable([100], 'lc_bias')
     local = tf.nn.relu(tf.matmul(output, lc_weight) + lc_bias)
     local = self.dropout(local)
     # Second Local
     lc2_weight = self.weight_variable_xavier(
-      [1000, 1000], name='lc2_weight')
-    lc2_bias = self.bias_variable([1000], 'lc2_bias')
+      [100, 100], name='lc2_weight')
+    lc2_bias = self.bias_variable([100], 'lc2_bias')
     local2 = tf.nn.relu(tf.matmul(local, lc2_weight) + lc2_bias)
     local2 = self.dropout(local2)
     # Classification
     weight = self.weight_variable_xavier(
-      [1000, self.n_classes], name='weight')
+      [100, self.n_classes], name='weight')
     bias = self.bias_variable([self.n_classes], 'bias')
     logits = tf.matmul(local2, weight) + bias
     return logits

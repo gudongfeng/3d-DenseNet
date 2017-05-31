@@ -18,6 +18,7 @@ train_params_merl = {
   'reduce_lr_epoch_2': 55,  # epochs * 0.75
   'validation_set': True,
   'validation_split': None,  # None or float
+  'queue_size':300,
   'normalization': 'std',  # None, divide_256, divide_255, std
 }
 
@@ -25,13 +26,14 @@ train_params_ucf101 = {
   'num_classes': 101,
   'batch_size': 20,
   'n_epochs': 100,
-  'crop_size': 128,
+  'crop_size': 100,
   'sequence_length': 16,
   'initial_learning_rate': 0.1,
   'reduce_lr_epoch_1': 50,
   'reduce_lr_epoch_2': 75,
   'validation_set': True,
   'validation_split': None,  # you may set it 6000 as in the paper
+  'queue_size':300,
   'normalization': 'std',
 }
 
@@ -162,7 +164,10 @@ if __name__ == '__main__':
   # ==========================================================================
   # DATA PREPARATION
   # ==========================================================================
-  train_params['test'] = args.test
+  train_params['test']  = args.test
+  train_params['train'] = args.train
+  if not args.train:
+    train_params['validation_set'] = False
   data_provider = get_data_provider_by_name(args.dataset, train_params)
 
   # ==========================================================================
