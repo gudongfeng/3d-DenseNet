@@ -13,10 +13,10 @@ TF_VERSION = float('.'.join(tf.__version__.split('.')[:2]))
 
 class DenseNet3D(object):
   def __init__(self, data_provider, growth_rate, depth,
-         total_blocks, keep_prob, bc_mode=False,
-         weight_decay, nesterov_momentum, model_type, dataset,
+         total_blocks, keep_prob, dataset,
+         weight_decay, nesterov_momentum, model_type, 
          should_save_logs, should_save_model,
-         renew_logs=False, reduction=1.0,
+         renew_logs=False, reduction=1.0, bc_mode=False,
          **kwargs):
     """
     Class to implement networks base on this paper
