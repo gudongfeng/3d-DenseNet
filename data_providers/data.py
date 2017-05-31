@@ -10,7 +10,7 @@ from .base_provider import VideosDataset, DataProvider
 
 class Data(VideosDataset):
   def __init__(self, name, paths, normalization, sequence_length,
-               crop_size, num_classes):
+               crop_size, num_classes, queue_size):
     """
     Args:
       name: str, name of the data (train, test or validation)
@@ -22,7 +22,8 @@ class Data(VideosDataset):
         None: no any normalization
         divide_255: divide all pixels by 255
         divide_256: divide all pixels by 256
-      num_classes: integer, number of classes that the dataset has
+      num_classes: `integer`, number of classes that the dataset has
+      queue_size: `integer`, data queue size
     """
     self.name             = name
     self.paths            = paths
@@ -30,7 +31,7 @@ class Data(VideosDataset):
     self.sequence_length  = sequence_length
     self.crop_size        = crop_size
     self.num_classes      = num_classes
-    self.queue            = DataQueue(name, 300)
+    self.queue            = DataQueue(name, queue_size)
     self.examples         = None
     self._start_data_thread()
 
@@ -160,7 +161,7 @@ class DataProvider(DataProvider):
   def __init__(self, num_classes, validation_set=None, test=False,
                validation_split=None, normalization=None, crop_size=64,
                sequence_length=16, train_queue=None, valid_queue=None,
-               test_queue=None, **kwargs):
+               test_queue=None, train=False, queue_size=300, **kwargs):
     """
     Args:
       num_classes: the number of the classes
@@ -175,6 +176,9 @@ class DataProvider(DataProvider):
           divide_256: divide all pixels by 256
       sequence_length: `integer`, video clip length
       crop_size: `integer`, the size that you want to reshape the images
+      train: `boolean`, whether we need the training queue or not
+      test: `test`, whether we need the testing queue or not
+      queue_size: `integer`, data queue size , default is 300
     """
     self._num_classes = num_classes
     self._sequence_length = sequence_length
@@ -189,18 +193,19 @@ class DataProvider(DataProvider):
       train_videos_labels = train_videos_labels[validation_split:]
       self.validation = Data('validation', valid_videos_labels,
                              normalization, sequence_length,
-                             crop_size, num_classes)
-    self.train = Data('train', train_videos_labels,
-                      normalization, sequence_length,
-                      crop_size, num_classes)
+                             crop_size, num_classes, queue_size)
+    if train:
+      self.train = Data('train', train_videos_labels,
+                        normalization, sequence_length,
+                        crop_size, num_classes, queue_size)
     if test:
       self.test = Data('test', test_videos_labels,
                       normalization, sequence_length,
-                      crop_size, num_classes)
+                      crop_size, num_classes, queue_size)
     if validation_set and not validation_split:
       self.validation = Data('validation', test_videos_labels,
                              normalization, sequence_length,
-                             crop_size, num_classes)
+                             crop_size, num_classes, queue_size)
 
   def get_videos_labels_lines(self, path):
     # Open the file according to the filename
