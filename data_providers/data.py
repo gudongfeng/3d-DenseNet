@@ -60,6 +60,9 @@ class Data(VideosDataset):
         img_data = np.array(img).astype(float)
         if self.normalization:
           img_data = self.normalize_image(img_data, self.normalization)
+          if np.isnan(img_data).all() or no.isinf(img_data).all():
+            # print out the error message
+            print("image data is Non")
         video.append(img_data)
     return video
 
