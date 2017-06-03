@@ -26,7 +26,7 @@ train_params_ucf101 = {
   'num_classes': 101,
   'batch_size': 20,
   'n_epochs': 100,
-  'crop_size': 100,
+  'crop_size': 128,
   'sequence_length': 16,
   'initial_learning_rate': 0.1,
   'reduce_lr_epoch_1': 50,
