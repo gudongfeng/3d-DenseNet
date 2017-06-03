@@ -1,8 +1,8 @@
 import os
+import cv2
 import random
 import tempfile
 import numpy as np
-import PIL.Image as Image
 from Queue import Queue
 from threading import Thread
 
@@ -55,11 +55,10 @@ class Data(VideosDataset):
       s_index = random.randint(0, len(filenames) - num_frames_per_clip)
       for i in range(s_index, s_index + num_frames_per_clip):
         image_name = str(filename) + '/' + str(filenames[i])
-        img = Image.open(image_name)
-        img = img.resize((self.crop_size, self.crop_size))
-        img_data = np.array(img).astype(float)
+        img = cv2.imread(image_name)
+        img = cv2.resize(img, (self.crop_size, self.crop_size))
         if self.normalization:
-          img_data = self.normalize_image(img_data, self.normalization)
+          img_data = self.normalize_image(img, self.normalization)
         video.append(img_data)
     return video
 
