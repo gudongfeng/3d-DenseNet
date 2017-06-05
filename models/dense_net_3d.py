@@ -11,14 +11,12 @@ import tensorflow as tf
 TF_VERSION = float('.'.join(tf.__version__.split('.')[:2]))
 
 
-class DenseNet3D:
-  def __init__(self, data_provider, growth_rate, gpu_num, depth,
-         total_blocks, keep_prob,
-         weight_decay, nesterov_momentum, model_type, dataset,
+class DenseNet3D(object):
+  def __init__(self, data_provider, growth_rate, depth,
+         total_blocks, keep_prob, dataset,
+         weight_decay, nesterov_momentum, model_type, 
          should_save_logs, should_save_model,
-         renew_logs=False,
-         reduction=1.0,
-         bc_mode=False,
+         renew_logs=False, reduction=1.0, bc_mode=False,
          **kwargs):
     """
     Class to implement networks base on this paper
@@ -45,41 +43,40 @@ class DenseNet3D:
       bc_mode: `bool`, should we use bottleneck layers and features
         reduction or not.
     """
-    self.data_provider = data_provider
-    self.data_shape = data_provider.data_shape
-    self.n_classes = data_provider.n_classes
-    self.depth = depth
-    self.growth_rate = growth_rate
+    self.data_provider          = data_provider
+    self.data_shape             = data_provider.data_shape
+    self.n_classes              = data_provider.n_classes
+    self.depth                  = depth
+    self.growth_rate            = growth_rate
     # how many features will be received after first convolution
     # value the same as in the original Torch code
-    self.first_output_features = growth_rate * 2
-    self.total_blocks = total_blocks
-    self.layers_per_block = (depth - (total_blocks + 1)) // total_blocks
+    self.first_output_features  = growth_rate * 2
+    self.total_blocks           = total_blocks
+    self.layers_per_block       = (depth - (total_blocks + 1)) // total_blocks
     self.bc_mode = bc_mode
     # compression rate at the transition layers
-    self.reduction = reduction
+    self.reduction              = reduction
     if not bc_mode:
       print("Build %s model with %d blocks, "
           "%d composite layers each." % (
             model_type, self.total_blocks, self.layers_per_block))
     if bc_mode:
-      self.layers_per_block = self.layers_per_block // 2
+      self.layers_per_block     = self.layers_per_block // 2
       print("Build %s model with %d blocks, "
           "%d bottleneck layers and %d composite layers each." % (
             model_type, self.total_blocks, self.layers_per_block,
             self.layers_per_block))
     print("Reduction at transition layers: %.1f" % self.reduction)
 
-    self.keep_prob = keep_prob
-    self.weight_decay = weight_decay
-    self.nesterov_momentum = nesterov_momentum
-    self.model_type = model_type
-    self.dataset_name = dataset
-    self.should_save_logs = should_save_logs
-    self.should_save_model = should_save_model
-    self.renew_logs = renew_logs
-    self.batches_step = 0
-    self.gpu_num = gpu_num
+    self.keep_prob          = keep_prob
+    self.weight_decay       = weight_decay
+    self.nesterov_momentum  = nesterov_momentum
+    self.model_type         = model_type
+    self.dataset_name       = dataset
+    self.should_save_logs   = should_save_logs
+    self.should_save_model  = should_save_model
+    self.renew_logs         = renew_logs
+    self.batches_step       = 0
 
     self._define_inputs()
     self._build_graph()
@@ -101,7 +98,7 @@ class DenseNet3D:
       self.sess.run(tf.global_variables_initializer())
       logswriter = tf.summary.FileWriter
     self.saver = tf.train.Saver(tf.global_variables(), max_to_keep=0)
-    self.summary_writer = logswriter(self.logs_path)
+    self.summary_writer = logswriter(self.logs_path, self.sess.graph)
 
   # (Updated)
   def _count_trainable_params(self):
@@ -219,11 +216,12 @@ class DenseNet3D:
       # BN
       output = self.batch_norm(_input)
       # ReLU
-      output = tf.nn.relu(output)
+      with tf.name_scope("ReLU"):
+        output = tf.nn.relu(output)
       # convolution
       output = self.conv3d(
         output, out_features=out_features, kernel_size=kernel_size)
-      # dropout(in case of training and in case it is no 1.0)
+        # dropout(in case of training and in case it is no 1.0)
       output = self.dropout(output)
     return output
 
@@ -231,7 +229,8 @@ class DenseNet3D:
   def bottleneck(self, _input, out_features):
     with tf.variable_scope("bottleneck"):
       output = self.batch_norm(_input)
-      output = tf.nn.relu(output)
+      with tf.name_scope("ReLU"):
+        output = tf.nn.relu(output)
       inter_features = out_features * 4
       output = self.conv3d(
         output, out_features=inter_features, kernel_size=1,
@@ -253,10 +252,11 @@ class DenseNet3D:
       comp_out = self.composite_function(
         bottleneck_out, out_features=growth_rate, kernel_size=3)
     # concatenate _input with out from composite function
-    if TF_VERSION >= 1.0:
-      output = tf.concat(axis=4, values=(_input, comp_out))
-    else:
-      output = tf.concat(4, (_input, comp_out))
+    with tf.name_scope("concat"):
+      if TF_VERSION >= 1.0:
+          output = tf.concat(axis=4, values=(_input, comp_out))
+      else:
+        output = tf.concat(4, (_input, comp_out))
     return output
 
   # (Updated)
@@ -277,7 +277,8 @@ class DenseNet3D:
     output = self.composite_function(
       _input, out_features=out_features, kernel_size=1)
     # run pooling
-    output = self.pool(output, k=2, d=pool_depth)
+    with tf.name_scope("pooling"):
+      output = self.pool(output, k=2, d=pool_depth)
     return output
 
   # (Updated)
@@ -291,11 +292,13 @@ class DenseNet3D:
     # BN
     output = self.batch_norm(_input)
     # ReLU
-    output = tf.nn.relu(output)
+    with tf.name_scope("ReLU"):
+      output = tf.nn.relu(output)
     # pooling
     last_pool_kernel = int(output.get_shape()[-2])
     last_sequence_length = int(output.get_shape()[1])
-    output = self.pool(output, k=last_pool_kernel, d=last_sequence_length)
+    with tf.name_scope("pooling"):
+      output = self.pool(output, k=last_pool_kernel, d=last_sequence_length)
     # FC
     features_total = int(output.get_shape()[-1])
     output = tf.reshape(output, [-1, features_total])
@@ -303,6 +306,25 @@ class DenseNet3D:
       [features_total, self.n_classes], name='W')
     bias = self.bias_variable([self.n_classes])
     logits = tf.matmul(output, W) + bias
+    # Local 
+    # features_total = int(output.get_shape()[-1])
+    # output = tf.reshape(output, [-1, features_total])
+    # lc_weight = self.weight_variable_xavier(
+    #   [features_total, 100], name='lc_weight')
+    # lc_bias = self.bias_variable([100], 'lc_bias')
+    # local = tf.nn.relu(tf.matmul(output, lc_weight) + lc_bias)
+    # local = self.dropout(local)
+    # # Second Local
+    # lc2_weight = self.weight_variable_xavier(
+    #   [100, 100], name='lc2_weight')
+    # lc2_bias = self.bias_variable([100], 'lc2_bias')
+    # local2 = tf.nn.relu(tf.matmul(local, lc2_weight) + lc2_bias)
+    # local2 = self.dropout(local2)
+    # # Classification
+    # weight = self.weight_variable_xavier(
+    #   [100, self.n_classes], name='weight')
+    # bias = self.bias_variable([self.n_classes], 'bias')
+    # logits = tf.matmul(local2, weight) + bias
     return logits
   
   # (Updated)
@@ -312,7 +334,8 @@ class DenseNet3D:
     kernel = self.weight_variable_msra(
       [kernel_size, kernel_size, kernel_size, in_features, out_features],
       name='kernel')
-    output = tf.nn.conv3d(_input, kernel, strides, padding)
+    with tf.name_scope("3DConv"):
+      output = tf.nn.conv3d(_input, kernel, strides, padding)
     return output
 
   # (Updated)
@@ -325,19 +348,21 @@ class DenseNet3D:
 
   # (Updated)
   def batch_norm(self, _input):
-    output = tf.contrib.layers.batch_norm(
-      _input, scale=True, is_training=self.is_training,
-      updates_collections=None)
+    with tf.name_scope("batch_normalization"):
+      output = tf.contrib.layers.batch_norm(
+        _input, scale=True, is_training=self.is_training,
+        updates_collections=None)
     return output
 
   # (Updated)
   def dropout(self, _input):
     if self.keep_prob < 1:
-      output = tf.cond(
-        self.is_training,
-        lambda: tf.nn.dropout(_input, self.keep_prob),
-        lambda: _input
-      )
+      with tf.name_scope('dropout'):
+        output = tf.cond(
+          self.is_training,
+          lambda: tf.nn.dropout(_input, self.keep_prob),
+          lambda: _input
+        )
     else:
       output = _input
     return output
@@ -361,53 +386,8 @@ class DenseNet3D:
     initial = tf.constant(0.0, shape=shape)
     return tf.get_variable(name, initializer=initial)
 
-
-  def average_gradients(self, tower_grads):
-    """Calculate the average gradient for each shared variable across all towers.
-
-    Note that this function provides a synchronization point across all towers.
-
-    Args:
-      tower_grads: List of lists of (gradient, variable) tuples. The outer list
-        is over individual gradients. The inner list is over the gradient
-        calculation for each tower.
-    Returns:
-      List of pairs of (gradient, variable) where the gradient has been averaged
-      across all towers.
-    """
-    average_grads = []
-    for grad_and_vars in zip(*tower_grads):
-      # Note that each grad_and_vars looks like the following:
-      #   ((grad0_gpu0, var0_gpu0), ... , (grad0_gpuN, var0_gpuN))
-      grads = []
-      for g, _ in grad_and_vars:
-        # Add 0 dimension to the gradients to represent the tower.
-        expanded_g = tf.expand_dims(g, 0)
-
-        # Append on a 'tower' dimension which we will average over below.
-        grads.append(expanded_g)
-
-      # Average over the 'tower' dimension.
-      grad = tf.concat(axis=0, values=grads)
-      grad = tf.reduce_mean(grad, 0)
-
-      # Keep in mind that the Variables are redundant because they are shared
-      # across towers. So .. we will just return the first tower's pointer to
-      # the Variable.
-      v = grad_and_vars[0][1]
-      grad_and_var = (grad, v)
-      average_grads.append(grad_and_var)
-    return average_grads
-
-  def tower_loss_acc(self):
-    """Calculate the total loos and accuracy on a single tower running the model.
-
-    Args:
-      scope: unique prefix string identifying the tower, e.g. 'tower_0'
-
-    Returns:
-      Tensor of shapes [] containing the total loss for a batch of data.
-    """
+  # (Updated)
+  def _build_graph(self):
     growth_rate = self.growth_rate
     layers_per_block = self.layers_per_block
     # first - initial 3 x 3 x 3 conv to first_output_features
@@ -429,63 +409,29 @@ class DenseNet3D:
 
     with tf.variable_scope("Transition_to_classes"):
       logits = self.trainsition_layer_to_classes(output)
-    prediction = tf.nn.softmax(logits)
+    with tf.name_scope("softmax"):
+      prediction = tf.nn.softmax(logits)
 
     # Losses
-    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-      logits=logits, labels=self.labels))
-    l2_loss = tf.add_n(
-      [tf.nn.l2_loss(var) for var in tf.trainable_variables()])
+    with tf.name_scope("loss"):
+      cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
+        logits=logits, labels=self.labels))
+      self.cross_entropy = cross_entropy
+      l2_loss = tf.add_n(
+        [tf.nn.l2_loss(var) for var in tf.trainable_variables()])
 
-    # Accuracy
-    correct_prediction = tf.equal(
-      tf.argmax(prediction, 1),
-      tf.argmax(self.labels, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-
-    return cross_entropy, l2_loss, accuracy
-
-  # (Updated)
-  def _build_graph(self):
     # Optimizer and train step
-    optimizer = tf.train.MomentumOptimizer(
-      self.learning_rate, self.nesterov_momentum, use_nesterov=True)
+    with tf.name_scope("optimizer"):
+      optimizer = tf.train.MomentumOptimizer(
+        self.learning_rate, self.nesterov_momentum, use_nesterov=True)
+      self.train_step = optimizer.minimize(
+        cross_entropy + l2_loss * self.weight_decay)
 
-    # Calculate the gradients for each GPU tower
-    tower_grads     = []
-    tower_accuracys = []
-    tower_loss      = []
-
-    for gpu_index in range(self.gpu_num):
-      with tf.device('/gpu:%d' % gpu_index):
-        with tf.name_scope('%s_%d' % ('tower', gpu_index)) as scope:
-          # Calculate the loss and accuracy for one tower for the model. This 
-          # function constructs the entire model but shares the variables 
-          # across all towers.
-          with tf.variable_scope("3d-denseNet") as dense_scope:
-            try:
-              cross_entropy, l2_loss, accuracy = self.tower_loss_acc()
-            except ValueError:
-              dense_scope.reuse_variables()
-              cross_entropy, l2_loss, accuracy = self.tower_loss_acc()
-          # Calculate the gradients for the batch of data on this tower
-          grads = optimizer.compute_gradients(
-              cross_entropy + l2_loss * self.weight_decay
-            )
-          # Keep track of the gradients across all towers
-          tower_grads.append(grads)
-          # Keep track of the accuracy across all towers
-          tower_accuracys.append(accuracy)
-          # Keep track of the cross entropy across all towers
-          tower_loss.append(cross_entropy)
-
-    # We must calculate the mean of each gradient. Note that this is the
-    # synchronization point across all tower
-    grads = self.average_gradients(tower_grads)
-    self.accuracy = tf.reduce_mean(tf.stack(tower_accuracys))
-    self.cross_entropy = tf.reduce_mean(tf.stack(tower_loss))
-    self.train_step = optimizer.apply_gradients(grads)
-
+    with tf.name_scope("prediction"):
+      correct_prediction = tf.equal(
+        tf.argmax(prediction, 1),
+        tf.argmax(self.labels, 1))
+      self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
   # (Updated)
   def train_all_epochs(self, train_params):
@@ -498,7 +444,7 @@ class DenseNet3D:
 
     # Restore the model if we have
     start_epoch = self.load_model()
-    
+
     # Start training 
     for epoch in range(start_epoch, n_epochs + 1):
       print("\n", '-' * 30, "Train epoch: %d" % epoch, '-' * 30, '\n')
@@ -563,8 +509,8 @@ class DenseNet3D:
       if self.should_save_logs:
         self.batches_step += 1
         self.log_loss_accuracy(
-          loss, accuracy, self.batches_step, prefix='per_batch',
-          should_print=False)
+          loss, accuracy, self.batches_step,
+          prefix='per_batch', should_print=False)
     mean_loss = np.mean(total_loss)
     mean_accuracy = np.mean(total_accuracy)
     return mean_loss, mean_accuracy
