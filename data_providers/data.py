@@ -44,7 +44,7 @@ class Data(VideosDataset):
     
     Returns
       video: numpy, video clip with shape
-        [sequence_length, width, height, channels]
+        [sequence_length, height, width, channels]
     '''
     video = []
     s_index = 0
@@ -104,7 +104,7 @@ class Data(VideosDataset):
     
     Returns
       videos: numpy, shape 
-        [batch_size, sequence_length, width, height, channels]
+        [batch_size, sequence_length, height, width, channels]
       labels: numpy
         [batch_size, num_classes]
     '''
@@ -147,7 +147,7 @@ class DataQueue():
     
     Returns:
       videos: list, list of numpy data with shape
-        [sequence_length, width, height, channels]
+        [sequence_length, height, width, channels]
       labels: list, list of integer number
     '''
     videos = []

@@ -294,8 +294,10 @@ class DenseNet3D(object):
     last_pool_kernel_height = int(output.get_shape()[-3])
     last_sequence_length = int(output.get_shape()[1])
     with tf.name_scope("pooling"):
-      output = self.pool(output, last_pool_kernel_height,
-                         last_sequence_length, last_pool_kernel_width)
+      output = self.pool(output, k = last_pool_kernel_height,
+                         d = last_sequence_length,
+                         width_k = last_pool_kernel_width,
+                         k_stride_width = last_pool_kernel_width)
     # FC
     features_total = int(output.get_shape()[-1])
     output = tf.reshape(output, [-1, features_total])
@@ -335,11 +337,11 @@ class DenseNet3D(object):
     return output
 
   # (Updated)
-  def pool(self, _input, k, d=2, k_stride=None, d_stride=None, type='avg', width_k=None, k_stride_width=None):
+  def pool(self, _input, k, d=2, width_k=None, type='avg', k_stride=None, d_stride=None, k_stride_width=None):
     if not width_k: width_k = k
     ksize = [1, d, k, width_k, 1]
     if not k_stride: k_stride = k
-    if not k_stride_width: k_stride_width = width_k
+    if not k_stride_width: k_stride_width = k_stride
     if not d_stride: d_stride = d
     strides = [1, d_stride, k_stride, k_stride_width, 1]
     padding = 'SAME'
