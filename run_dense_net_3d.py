@@ -10,7 +10,7 @@ train_params_merl = {
   'num_classes': 5,
   'batch_size': 10,
   'n_epochs': 70,
-  'crop_size': 100,
+  'crop_size': (200,100),
   'sequence_length': 16,
   'initial_learning_rate': 0.1,
   'reduce_lr_epoch_1': 30,  # epochs * 0.5
@@ -25,7 +25,7 @@ train_params_kth = {
   'num_classes': 6,
   'batch_size': 10,
   'n_epochs': 70,
-  'crop_size': 100,
+  'crop_size': (75, 150),
   'sequence_length': 16,
   'initial_learning_rate': 0.1,
   'reduce_lr_epoch_1': 30,  # epochs * 0.5
@@ -40,14 +40,14 @@ train_params_ucf101 = {
   'num_classes': 101,
   'batch_size': 20,
   'n_epochs': 100,
-  'crop_size': 128,
+  'crop_size': (128, 128),
   'sequence_length': 16,
   'initial_learning_rate': 0.1,
   'reduce_lr_epoch_1': 50,
   'reduce_lr_epoch_2': 75,
   'validation_set': True,
   'validation_split': None,  # you may set it 6000 as in the paper
-  'queue_size':300,
+  'queue_size': 100,
   'normalization': 'std',
 }
 
