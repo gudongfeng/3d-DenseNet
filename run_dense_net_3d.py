@@ -17,7 +17,7 @@ train_params_merl = {
   'reduce_lr_epoch_2': 55,  # epochs * 0.75
   'validation_set': True,
   'validation_split': None,  # None or float
-  'queue_size':300,
+  'queue_size': 300,
   'normalization': 'std',  # None, divide_256, divide_255, std
 }
 
@@ -32,7 +32,7 @@ train_params_kth = {
   'reduce_lr_epoch_2': 55,  # epochs * 0.75
   'validation_set': True,
   'validation_split': None,  # None or float
-  'queue_size':300,
+  'queue_size': 300,
   'normalization': 'std',  # None, divide_256, divide_255, std
 }
 

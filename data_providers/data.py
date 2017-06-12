@@ -51,10 +51,13 @@ class Data(VideosDataset):
     for parent, dirnames, filenames in os.walk(filename):
       if(len(filenames) < num_frames_per_clip):
         return None
-      filenames = sorted(filenames)
+      suffix = filenames[0].split('.', 1)[1]
+      filenames_int = [int(i.split('.', 1)[0]) for i in filenames]
+      filenames_int = sorted(filenames_int)
       s_index = random.randint(0, len(filenames) - num_frames_per_clip)
       for i in range(s_index, s_index + num_frames_per_clip):
-        image_name = str(filename) + '/' + str(filenames[i])
+        image_name = str(filename) + '/' + str(filenames_int[i]) + '.' + suffix
+        print image_name
         img = cv2.imread(image_name)
         img = cv2.resize(img, (self.crop_size, self.crop_size))
         if self.normalization:
