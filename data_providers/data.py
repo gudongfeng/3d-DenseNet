@@ -57,7 +57,7 @@ class Data(VideosDataset):
       s_index = random.randint(0, len(filenames) - num_frames_per_clip)
       for i in range(s_index, s_index + num_frames_per_clip):
         image_name = str(filename) + '/' + str(filenames_int[i]) + '.' + suffix
-        print image_name
+        # print image_name
         img = cv2.imread(image_name)
         img = cv2.resize(img, (self.crop_size, self.crop_size))
         if self.normalization:
