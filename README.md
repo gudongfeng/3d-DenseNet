@@ -1,29 +1,25 @@
 # 3D-DenseNet with TensorFlow
 
-Two types of `Densely Connected Convolutional Networks [DenseNets](https://arxiv.org/abs/1608.06993) are available:
+Expand the `Densely Connected Convolutional Networks [DenseNets](https://arxiv.org/abs/1608.06993) to 3D-DenseNet for action recognition (video classification):
 
-- DenseNet - without bottleneck layers
-- DenseNet-BC - with bottleneck layers
+- 3D-DenseNet - without bottleneck layers
+- 3D-DenseNet-BC - with bottleneck layers
 
 Each model can be tested on such datasets:
 
-- [UCF101](http://crcv.ucf.edu/data/UCF101/UCF101.rar)
+- [KTH](http://www.nada.kth.se/cvap/actions/)
 - [MERL](http://www.merl.com/demos/merl-shopping-dataset)
 
 A number of layers, blocks, growth rate, video normalization and other training params may be changed trough shell or inside the source code.
 
-There are also many [other implementations](https://github.com/liuzhuang13/DenseNet) they may be useful also.
+There are also many [other implementations](https://github.com/liuzhuang13/DenseNet), they may be useful also.
 
-Citation for DenseNet:
+## Pre-request libraries
+- python2
+- tensorflow 1.0
+- opencv2 for python2
 
-     @article{Huang2016Densely,
-            author = {Huang, Gao and Liu, Zhuang and Weinberger, Kilian Q.},
-            title = {Densely Connected Convolutional Networks},
-            journal = {arXiv preprint arXiv:1608.06993},
-            year = {2016}
-     }
-
-## Step 1: Data preparation
+## Step 1: Data preparation (UCF dataset example)
 
 1. Download the [UCF101](http://crcv.ucf.edu/data/UCF101/UCF101.rar) (Action Recognition Data Set).
 2. Extract the `UCF101.rar` file and you will get `UCF101/<action_name>/<video_name.avi>` folder structure.
@@ -57,13 +53,15 @@ Citation for DenseNet:
 
 ## Step 2: Train or Test the model
 
-- Train the program
+- Check the trainig help message
 
-    python run_dense_net_3d.py --train --test --dataset=MERL
+    `python run_dense_net_3d.py -h`
 
-- Check parameter help message
+- Train and test the program
 
-    python run_dense_net_3d.py --help
+    `python run_dense_net_3d.py --train --test` \
+    `// Notices that all the logs message will be written in log.txt file in the root folder`
+
 
 ## Options
 
@@ -72,7 +70,7 @@ Citation for DenseNet:
     'num_classes': 5,               # The number of the classes that this dataset had
     'batch_size': 10,               # Batch Size When we trian the model
     'n_epochs': 100,                # The total number of epoch we run the model
-    'crop_size': 64,                # The weight and length of images that we used to trian the model
+    'crop_size': (64,64),           # The (width, height) of images that we used to trian the model
     'sequence_length': 16,          # The length of the video clip
     'overlap_length': 8,            # The overlap of the images when we extract the video clips,
                                       this should be less than sequence_length
@@ -81,30 +79,19 @@ Citation for DenseNet:
     'reduce_lr_epoch_2': 75,        # epochs * 0.75
     'validation_set': True,         # Whether used validation set or not
     'validation_split': None,       # None or float
-    'shuffle': True,                # None, once_prior_train, every_epoch
-    'normalization': 'by_channels', # None, divide_256, divide_255, by_channels
+    'queue_size': 300,              # The data queue size when we extract the data from dataset,
+                                      should be set according to your memory size
+    'normalization': 'std',         # None, divide_256, divide_255, std
     ```
 
 
 ## Result
 
-Test results on MERL dataset. Video normalization per channels was used.
-
-|Model type             |Depth  |MERL      |
-|-----------------------|:-----:|---------:|
-|DenseNet(*k* = 12)     |20     |0.717647  |
+Test results on MERL shopping dataset. Video normalization per channels was used.
+![image](/fig/result.png)
 
 
 Approximate training time for models on GeForce GTX TITAN X (12 GB memory):
 
-- DenseNet(*k* = 12, *d* = 20) - 25 hrs
-- DenseNet-BC(*k* = 12, *d* = 100) - 1 day 18 hrs
-
-
-## Dependencies
-
-- Model was tested with Python 3.4.3+ and Python 3.5.2 with and without CUDA.
-- Model should work as expected with TensorFlow >= 0.10. Tensorflow 1.0 support was included.
-
-Repo supported with requirements file - so the easiest way to install all just run ``pip install -r requirements.txt``.
+- 3D-DenseNet(*k* = 12, *d* = 20) - 25 hrs
 

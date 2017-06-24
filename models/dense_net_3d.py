@@ -295,10 +295,12 @@ class DenseNet3D(object):
     with tf.name_scope("ReLU"):
       output = tf.nn.relu(output)
     # pooling
-    last_pool_kernel = int(output.get_shape()[-2])
+    last_pool_kernel_width = int(output.get_shape()[-2])
+    last_pool_kernel_height = int(output.get_shape()[-3])
     last_sequence_length = int(output.get_shape()[1])
     with tf.name_scope("pooling"):
-      output = self.pool(output, k=last_pool_kernel, d=last_sequence_length)
+      output = self.pool(output, last_pool_kernel_height,
+                         last_sequence_length, last_pool_kernel_width)
     # FC
     features_total = int(output.get_shape()[-1])
     output = tf.reshape(output, [-1, features_total])
@@ -339,9 +341,10 @@ class DenseNet3D(object):
     return output
 
   # (Updated)
-  def pool(self, _input, k, d=2):
-    ksize = [1, d, k, k, 1]
-    strides = [1, d, k, k, 1]
+  def pool(self, _input, k, d=2, width_k=None):
+    if width_k is None: width_k = k
+    ksize = [1, d, k, width_k, 1]
+    strides = [1, d, k, width_k, 1]
     padding = 'VALID'
     output = tf.nn.avg_pool3d(_input, ksize, strides, padding)
     return output
@@ -491,7 +494,7 @@ class DenseNet3D(object):
     total_accuracy = []
     for i in range(num_examples // batch_size):
       # videos size is (numpy array):
-      #   [batch_size, sequence_length, crop_size, crop_size, channels]
+      #   [batch_size, sequence_length, width, height, channels]
       # labels size is (numpy array):
       #   [batch_size, num_classes] 
       videos, labels = data.next_batch(batch_size)

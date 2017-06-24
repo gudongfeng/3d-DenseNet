@@ -17,7 +17,7 @@ class Data(VideosDataset):
       paths: list, list of string that have the video path and label 
         information
       sequence_length: video clip length
-      crop_size: image resize size
+      crop_size: `tuple`, image resize size (width, height)
       normalization: `str` or None
         None: no any normalization
         divide_255: divide all pixels by 255
@@ -44,19 +44,22 @@ class Data(VideosDataset):
     
     Returns
       video: numpy, video clip with shape
-        [sequence_length, crop_size, crop_size, channels]
+        [sequence_length, width, height, channels]
     '''
     video = []
     s_index = 0
     for parent, dirnames, filenames in os.walk(filename):
       if(len(filenames) < num_frames_per_clip):
         return None
-      filenames = sorted(filenames)
+      suffix = filenames[0].split('.', 1)[1]
+      filenames_int = [int(i.split('.', 1)[0]) for i in filenames]
+      filenames_int = sorted(filenames_int)
       s_index = random.randint(0, len(filenames) - num_frames_per_clip)
       for i in range(s_index, s_index + num_frames_per_clip):
-        image_name = str(filename) + '/' + str(filenames[i])
+        image_name = str(filename) + '/' + str(filenames_int[i]) + '.' + suffix
+        # print image_name
         img = cv2.imread(image_name)
-        img = cv2.resize(img, (self.crop_size, self.crop_size))
+        img = cv2.resize(img, self.crop_size)
         if self.normalization:
           img_data = self.normalize_image(img, self.normalization)
         video.append(img_data)
@@ -101,7 +104,7 @@ class Data(VideosDataset):
     
     Returns
       videos: numpy, shape 
-        [batch_size, sequence_length, crop_size, crop_size, channels]
+        [batch_size, sequence_length, width, height, channels]
       labels: numpy
         [batch_size, num_classes]
     '''
@@ -144,7 +147,7 @@ class DataQueue():
     
     Returns:
       videos: list, list of numpy data with shape
-        [sequence_length, crop_size, crop_size, channels]
+        [sequence_length, width, height, channels]
       labels: list, list of integer number
     '''
     videos = []
@@ -158,7 +161,7 @@ class DataQueue():
 
 class DataProvider(DataProvider):
   def __init__(self, num_classes, validation_set=None, test=False,
-               validation_split=None, normalization=None, crop_size=64,
+               validation_split=None, normalization=None, crop_size=(64,64),
                sequence_length=16, train_queue=None, valid_queue=None,
                test_queue=None, train=False, queue_size=300, **kwargs):
     """
@@ -174,7 +177,7 @@ class DataProvider(DataProvider):
           divide_255: divide all pixels by 255
           divide_256: divide all pixels by 256
       sequence_length: `integer`, video clip length
-      crop_size: `integer`, the size that you want to reshape the images
+      crop_size: `tuple`, the size that you want to reshape the images, (width, height)
       train: `boolean`, whether we need the training queue or not
       test: `test`, whether we need the testing queue or not
       queue_size: `integer`, data queue size , default is 300
@@ -214,7 +217,7 @@ class DataProvider(DataProvider):
 
   @property
   def data_shape(self):
-    return (self._sequence_length, self._crop_size, self._crop_size, 3)
+    return (self._sequence_length, self._crop_size[1], self._crop_size[0], 3)
 
   @property
   def n_classes(self):

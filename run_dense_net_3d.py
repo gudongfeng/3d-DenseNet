@@ -10,14 +10,29 @@ train_params_merl = {
   'num_classes': 5,
   'batch_size': 10,
   'n_epochs': 70,
-  'crop_size': 100,
+  'crop_size': (200,100),
   'sequence_length': 16,
   'initial_learning_rate': 0.1,
   'reduce_lr_epoch_1': 30,  # epochs * 0.5
   'reduce_lr_epoch_2': 55,  # epochs * 0.75
   'validation_set': True,
   'validation_split': None,  # None or float
-  'queue_size':300,
+  'queue_size': 300,
+  'normalization': 'std',  # None, divide_256, divide_255, std
+}
+
+train_params_kth = {
+  'num_classes': 6,
+  'batch_size': 10,
+  'n_epochs': 70,
+  'crop_size': (75, 150),
+  'sequence_length': 16,
+  'initial_learning_rate': 0.1,
+  'reduce_lr_epoch_1': 30,  # epochs * 0.5
+  'reduce_lr_epoch_2': 55,  # epochs * 0.75
+  'validation_set': True,
+  'validation_split': None,  # None or float
+  'queue_size': 300,
   'normalization': 'std',  # None, divide_256, divide_255, std
 }
 
@@ -25,16 +40,17 @@ train_params_ucf101 = {
   'num_classes': 101,
   'batch_size': 20,
   'n_epochs': 100,
-  'crop_size': 128,
+  'crop_size': (128, 128),
   'sequence_length': 16,
   'initial_learning_rate': 0.1,
   'reduce_lr_epoch_1': 50,
   'reduce_lr_epoch_2': 75,
   'validation_set': True,
   'validation_split': None,  # you may set it 6000 as in the paper
-  'queue_size':300,
+  'queue_size': 100,
   'normalization': 'std',
 }
+
 
 
 def get_train_params_by_name(name):
@@ -42,7 +58,8 @@ def get_train_params_by_name(name):
     return train_params_ucf101
   if name == 'MERL':
     return train_params_merl
-
+  if name == 'KTH':
+    return train_params_kth
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -69,7 +86,7 @@ if __name__ == '__main__':
     help='Depth of whole network, restricted to paper choices (default: %(default)s)')
   parser.add_argument(
     '--dataset', '-ds', type=str,
-    choices=['MERL', 'UCF101'],
+    choices=['MERL', 'UCF101', 'KTH'],
     default='MERL',
     help='What dataset should be used (default: %(default)s)')
   parser.add_argument(
@@ -132,6 +149,7 @@ if __name__ == '__main__':
 
   if not args.train and not args.test:
     print("You should train or test your network. Please check params.")
+    parser.print_help()
     exit()
   
   # ==========================================================================
