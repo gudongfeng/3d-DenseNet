@@ -150,6 +150,7 @@ if __name__ == '__main__':
 
   if not args.train and not args.test:
     print("You should train or test your network. Please check params.")
+    parser.print_help()
     exit()
 
   # ==========================================================================
