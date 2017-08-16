@@ -49,7 +49,7 @@ class Data(VideosDataset):
     video = []
     s_index = 0
     for parent, dirnames, files in os.walk(filename):
-      filenames = [ fi for fi in files if not fi.endswith((".png", ".jpg", "jpeg")) ]
+      filenames = [ fi for fi in files if fi.endswith((".png", ".jpg", "jpeg")) ]
       if(len(filenames) < num_frames_per_clip):
         return None
       suffix = filenames[0].split('.', 1)[1]
