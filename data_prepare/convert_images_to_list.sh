@@ -2,7 +2,8 @@
 
 # convert the images folder to the test.list and train.list file according to
 #   the distribution, command will clear the train.list and test.list files first
-#   Need to create the test.list and train.list files.
+#   Need to create the test.list and train.list files. After the creation of list
+#   files, move the list file to the root of video folder.
 #
 #   Args:
 #       path: the path to the video folder
@@ -14,11 +15,11 @@
 #   Example Usage:
 #       ./convert_images_to_list.sh ~/document/videofile 4
 #   Example Output(train.list and test.list):
-#       /Volumes/passport/datasets/action_kth/origin_images/boxing/person01_boxing_d1_uncomp 0
-#       /Volumes/passport/datasets/action_kth/origin_images/boxing/person01_boxing_d2_uncomp 0
+#       boxing/person01_boxing_d1_uncomp 0
+#       boxing/person01_boxing_d2_uncomp 0
 #       ...
-#       /Volumes/passport/datasets/action_kth/origin_images/handclapping/person01_handclapping_d1_uncomp 1
-#       /Volumes/passport/datasets/action_kth/origin_images/handclapping/person01_handclapping_d2_uncomp 1
+#       handclapping/person01_handclapping_d1_uncomp 1
+#       handclapping/person01_handclapping_d2_uncomp 1
 #       ...
 
 > train.list
@@ -30,9 +31,9 @@ do
     for imagesFolder in "$folder"/*
     do
         if (( $(jot -r 1 1 $2)  > 1 )); then
-            echo "$imagesFolder" $COUNT >> train.list
+            echo `basename $folder`/`basename $imagesFolder` $COUNT >> train.list
         else
-            echo "$imagesFolder" $COUNT >> test.list
+            echo `basename $folder`/`basename $imagesFolder` $COUNT >> test.list
         fi        
     done
 done

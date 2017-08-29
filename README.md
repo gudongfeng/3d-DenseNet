@@ -22,34 +22,34 @@ There are also many [other implementations](https://github.com/liuzhuang13/Dense
 ## Step 1: Data preparation (UCF dataset example)
 
 1. Download the [UCF101](http://crcv.ucf.edu/data/UCF101/UCF101.rar) (Action Recognition Data Set).
-2. Extract the `UCF101.rar` file and you will get `UCF101/<action_name>/<video_name.avi>` folder structure.
+2. Extract the `UCF101.rar` file and you will get `../UCF101/<action_name>/<video_name.avi>` folder structure.
 3. Use the `./data_prepare/convert_video_to_images.sh` script to decode the `UCF101` video files to image files.
-    - run `./data_prepare/convert_video_to_images.sh ../UCF101 5` (number `5` means the fps rate)
+    - run `./data_prepare/convert_video_to_images.sh ../UCF101 25` (number `25` means the fps rate)
 4. Use the `./data_prepare/convert_images_to_list.sh` script to create/update the `{train,test}.list` according to the new `UCF101` image folder structure generated from last step (from images to files).
     - run `./data_prepare/convert_images_to_list.sh .../UCF101 4`, this will update the `test.list` and `train.list` files (number `4` means the ratio of test and train data is 1/4)
-    - `train.list`:
+    - `train.list` example:
         ```
-        database/ucf101/train/ApplyEyeMakeup/v_ApplyEyeMakeup_g01_c01 0
-        database/ucf101/train/ApplyEyeMakeup/v_ApplyEyeMakeup_g01_c02 0
-        database/ucf101/train/ApplyEyeMakeup/v_ApplyEyeMakeup_g01_c03 0
-        database/ucf101/train/ApplyLipstick/v_ApplyLipstick_g01_c01 1
-        database/ucf101/train/ApplyLipstick/v_ApplyLipstick_g01_c02 1
-        database/ucf101/train/ApplyLipstick/v_ApplyLipstick_g01_c03 1
-        database/ucf101/train/Archery/v_Archery_g01_c01 2
-        database/ucf101/train/Archery/v_Archery_g01_c02 2
-        database/ucf101/train/Archery/v_Archery_g01_c03 2
-        database/ucf101/train/Archery/v_Archery_g01_c04 2
-        database/ucf101/train/BabyCrawling/v_BabyCrawling_g01_c01 3
-        database/ucf101/train/BabyCrawling/v_BabyCrawling_g01_c02 3
-        database/ucf101/train/BabyCrawling/v_BabyCrawling_g01_c03 3
-        database/ucf101/train/BabyCrawling/v_BabyCrawling_g01_c04 3
-        database/ucf101/train/BalanceBeam/v_BalanceBeam_g01_c01 4
-        database/ucf101/train/BalanceBeam/v_BalanceBeam_g01_c02 4
-        database/ucf101/train/BalanceBeam/v_BalanceBeam_g01_c03 4
-        database/ucf101/train/BalanceBeam/v_BalanceBeam_g01_c04 4
+        ApplyEyeMakeup/v_ApplyEyeMakeup_g01_c01 0
+        ApplyEyeMakeup/v_ApplyEyeMakeup_g01_c02 0
+        ApplyEyeMakeup/v_ApplyEyeMakeup_g01_c03 0
+        ApplyLipstick/v_ApplyLipstick_g01_c01 1
+        ApplyLipstick/v_ApplyLipstick_g01_c02 1
+        ApplyLipstick/v_ApplyLipstick_g01_c03 1
+        Archery/v_Archery_g01_c01 2
+        Archery/v_Archery_g01_c02 2
+        Archery/v_Archery_g01_c03 2
+        Archery/v_Archery_g01_c04 2
+        BabyCrawling/v_BabyCrawling_g01_c01 3
+        BabyCrawling/v_BabyCrawling_g01_c02 3
+        BabyCrawling/v_BabyCrawling_g01_c03 3
+        BabyCrawling/v_BabyCrawling_g01_c04 3
+        BalanceBeam/v_BalanceBeam_g01_c01 4
+        BalanceBeam/v_BalanceBeam_g01_c02 4
+        BalanceBeam/v_BalanceBeam_g01_c03 4
+        BalanceBeam/v_BalanceBeam_g01_c04 4
         ...
         ```
-5. Copy/Cut the `test.list` and `train.list` files to the `data_providers` folders.
+5. Copy/Cut the `test.list` and `train.list` files to the root of video folder (`../UCF101`).
 
 ## Step 2: Train or Test the model
 
@@ -59,13 +59,13 @@ There are also many [other implementations](https://github.com/liuzhuang13/Dense
 
 - Train and test the program
 
-    `python run_dense_net_3d.py --train --test` \
+    `python run_dense_net_3d.py --train --test -ds path/to/video_folder` \
     `// Notices that all the logs message will be written in log.txt file in the root folder`
 
 
 ## Options
 
-- `run_dense_net_3d.py` -> `train_params_<dataset>` settings
+- `run_dense_net_3d.py` -> `train_params` settings
     ```
     'num_classes': 5,               # The number of the classes that this dataset had
     'batch_size': 10,               # Batch Size When we trian the model

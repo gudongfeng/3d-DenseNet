@@ -4,10 +4,10 @@ import argparse
 import numpy as np
 
 from models.dense_net_3d import DenseNet3D
-from data_providers.utils import get_data_provider_by_name
+from data_providers.utils import get_data_provider_by_path
 
 
-train_params_merl = {
+train_params = {
   'num_classes': 5,
   'batch_size': 10,
   'n_epochs': 70,
@@ -22,45 +22,6 @@ train_params_merl = {
   'normalization': 'std',  # None, divide_256, divide_255, std
 }
 
-train_params_kth = {
-  'num_classes': 6,
-  'batch_size': 10,
-  'n_epochs': 70,
-  'crop_size': (75, 150),
-  'sequence_length': 16,
-  'initial_learning_rate': 0.1,
-  'reduce_lr_epoch_1': 30,  # epochs * 0.5
-  'reduce_lr_epoch_2': 55,  # epochs * 0.75
-  'validation_set': True,
-  'validation_split': None,  # None or float
-  'queue_size': 300,
-  'normalization': 'std',  # None, divide_256, divide_255, std
-}
-
-train_params_ucf101 = {
-  'num_classes': 101,
-  'batch_size': 20,
-  'n_epochs': 100,
-  'crop_size': (128, 128),
-  'sequence_length': 16,
-  'initial_learning_rate': 0.1,
-  'reduce_lr_epoch_1': 50,
-  'reduce_lr_epoch_2': 75,
-  'validation_set': True,
-  'validation_split': None,  # you may set it 6000 as in the paper
-  'queue_size': 100,
-  'normalization': 'std',
-}
-
-
-
-def get_train_params_by_name(name):
-  if name == 'UCF101':
-    return train_params_ucf101
-  if name == 'MERL':
-    return train_params_merl
-  if name == 'KTH':
-    return train_params_kth
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -86,15 +47,13 @@ if __name__ == '__main__':
     default=20,
     help='Depth of whole network, restricted to paper choices (default: %(default)s)')
   parser.add_argument(
-    '--dataset', '-ds', type=str,
-    choices=['MERL', 'UCF101', 'KTH'],
-    default='MERL',
-    help='What dataset should be used (default: %(default)s)')
+    '--dataset', '-ds', type=str, 
+    help='Path to the dataset')
   parser.add_argument(
     '--total_blocks', '-tb', type=int, default=3, metavar='',
     help='Total blocks of layers stack (default: %(default)s)')
   parser.add_argument(
-    '--keep_prob', '-kp', type=float, metavar='',
+    '--keep_prob', '-kp', type=float, default=1.0, metavar='', 
     help="Keep probability for dropout.")
   parser.add_argument(
     '--gpu_id', '-gid', type=str, default='0',
@@ -135,11 +94,6 @@ if __name__ == '__main__':
 
   args = parser.parse_args()
 
-  if not args.keep_prob:
-    if args.dataset in ['UCF101']:
-      args.keep_prob = 0.8
-    else:
-      args.keep_prob = 1.0
   if args.model_type == 'DenseNet':
     args.bc_mode = False
     args.reduction = 1.0
@@ -148,7 +102,7 @@ if __name__ == '__main__':
 
   model_params = vars(args)
 
-  if not args.train and not args.test:
+  if not args.train and not args.test or not args.dataset:
     print("You should train or test your network. Please check params.")
     parser.print_help()
     exit()
@@ -171,7 +125,6 @@ if __name__ == '__main__':
   # PARAMETERS PRINTING
   # ==========================================================================
   # some default params dataset/architecture related
-  train_params = get_train_params_by_name(args.dataset)
   print("Params:")
   for k, v in model_params.items():
     print("\t%s: %s" % (k, v))
@@ -186,7 +139,7 @@ if __name__ == '__main__':
   train_params['train'] = args.train
   if not args.train:
     train_params['validation_set'] = False
-  data_provider = get_data_provider_by_name(args.dataset, train_params)
+  data_provider = get_data_provider_by_path(args.dataset, train_params)
 
   # ==========================================================================
   # TRAINING & TESTING
