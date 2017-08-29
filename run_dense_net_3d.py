@@ -13,8 +13,8 @@ train_params = {
   'num_classes': 5,
   'batch_size': 10,
   'n_epochs': 70,
-  'crop_size': (200,100),
-  'sequence_length': 12,
+  'crop_size': (150,100),
+  'sequence_length': 16,
   'initial_learning_rate': 0.1,
   'reduce_lr_epoch_1': 30,  # epochs * 0.5
   'reduce_lr_epoch_2': 55,  # epochs * 0.75
