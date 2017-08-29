@@ -44,7 +44,7 @@ class Data(VideosDataset):
     
     Returns
       video: numpy, video clip with shape
-        [sequence_length, width, height, channels]
+        [sequence_length, height, width, channels]
     '''
     video = []
     s_index = 0
@@ -105,7 +105,7 @@ class Data(VideosDataset):
     
     Returns
       videos: numpy, shape 
-        [batch_size, sequence_length, width, height, channels]
+        [batch_size, sequence_length, height, width, channels]
       labels: numpy
         [batch_size, num_classes]
     '''
@@ -148,7 +148,7 @@ class DataQueue():
     
     Returns:
       videos: list, list of numpy data with shape
-        [sequence_length, width, height, channels]
+        [sequence_length, height, width, channels]
       labels: list, list of integer number
     '''
     videos = []
@@ -161,7 +161,7 @@ class DataQueue():
 
 
 class DataProvider(DataProvider):
-  def __init__(self, num_classes, validation_set=None, test=False,
+  def __init__(self, path, num_classes, validation_set=None, test=False,
                validation_split=None, normalization=None, crop_size=(64,64),
                sequence_length=16, train_queue=None, valid_queue=None,
                test_queue=None, train=False, queue_size=300, **kwargs):
@@ -183,13 +183,16 @@ class DataProvider(DataProvider):
       test: `test`, whether we need the testing queue or not
       queue_size: `integer`, data queue size , default is 300
     """
-    self._num_classes = num_classes
+    self._path            = path
+    self._num_classes     = num_classes
     self._sequence_length = sequence_length
-    self._crop_size = crop_size
-    train_videos_labels = self.get_videos_labels_lines(
-      'data_providers/train.list')
-    test_videos_labels = self.get_videos_labels_lines(
-      'data_providers/test.list')
+    self._crop_size       = crop_size
+
+    train_videos_labels   = self.get_videos_labels_lines(
+      os.path.join(self._path, 'train.list'))
+    test_videos_labels    = self.get_videos_labels_lines(
+      os.path.join(self._path, 'test.list'))
+
     if validation_set and validation_split:
       random.shuffle(train_videos_labels)
       valid_videos_labels = train_videos_labels[:validation_split]
@@ -214,7 +217,8 @@ class DataProvider(DataProvider):
     # Open the file according to the filename
     lines = open(path, 'r')
     lines = list(lines)
-    return lines
+    new_lines = [os.path.join(self._path, line) for line in lines]
+    return new_lines
 
   @property
   def data_shape(self):

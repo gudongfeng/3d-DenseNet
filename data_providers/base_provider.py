@@ -30,8 +30,7 @@ class VideosDataset(DataSet):
     elif normalization_type == 'divide_256':
       image = image/256
     elif normalization_type == 'std':
-      tmp = image
-      image = (image - np.mean(tmp))/np.std(tmp)
+      image = (image - np.mean(image))/np.std(image)
     else:
       raise Exception("Unknow type of normalization")
     return image

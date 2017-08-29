@@ -299,8 +299,10 @@ class DenseNet3D(object):
     last_pool_kernel_height = int(output.get_shape()[-3])
     last_sequence_length = int(output.get_shape()[1])
     with tf.name_scope("pooling"):
-      output = self.pool(output, last_pool_kernel_height,
-                         last_sequence_length, last_pool_kernel_width)
+      output = self.pool(output, k = last_pool_kernel_height,
+                         d = last_sequence_length,
+                         width_k = last_pool_kernel_width,
+                         k_stride_width = last_pool_kernel_width)
     # FC
     features_total = int(output.get_shape()[-1])
     output = tf.reshape(output, [-1, features_total])
@@ -341,12 +343,20 @@ class DenseNet3D(object):
     return output
 
   # (Updated)
-  def pool(self, _input, k, d=2, width_k=None):
-    if width_k is None: width_k = k
+  def pool(self, _input, k, d=2, width_k=None, type='avg', k_stride=None, d_stride=None, k_stride_width=None):
+    if not width_k: width_k = k
     ksize = [1, d, k, width_k, 1]
-    strides = [1, d, k, width_k, 1]
-    padding = 'VALID'
-    output = tf.nn.avg_pool3d(_input, ksize, strides, padding)
+    if not k_stride: k_stride = k
+    if not k_stride_width: k_stride_width = k_stride
+    if not d_stride: d_stride = d
+    strides = [1, d_stride, k_stride, k_stride_width, 1]
+    padding = 'SAME'
+    if type is 'max':
+      output = tf.nn.max_pool3d(_input, ksize, strides, padding)
+    elif type is 'avg':
+      output = tf.nn.avg_pool3d(_input, ksize, strides, padding)
+    else:
+      output = None
     return output
 
   # (Updated)
@@ -398,7 +408,10 @@ class DenseNet3D(object):
       output = self.conv3d(
         self.videos,
         out_features=self.first_output_features,
-        kernel_size=3)
+        kernel_size=7,
+        strides=[1, 1, 2, 2, 1])
+      # first pooling
+      output = self.pool(output, k=3, d=3, k_stride=2, d_stride=1)
 
     # add N required blocks
     for block in range(self.total_blocks):
@@ -407,34 +420,31 @@ class DenseNet3D(object):
       # last block exist without transition layer
       if block != self.total_blocks - 1:
         with tf.variable_scope("Transition_after_block_%d" % block):
-          pool_depth = 1 if block == 0 else 2
+          #pool_depth = 1 if block == 0 else 2
+          pool_depth = 2
           output = self.transition_layer(output, pool_depth)
 
     with tf.variable_scope("Transition_to_classes"):
       logits = self.trainsition_layer_to_classes(output)
-    with tf.name_scope("softmax"):
-      prediction = tf.nn.softmax(logits)
+    prediction = tf.nn.softmax(logits)
 
     # Losses
-    with tf.name_scope("loss"):
-      cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-        logits=logits, labels=self.labels))
-      self.cross_entropy = cross_entropy
-      l2_loss = tf.add_n(
-        [tf.nn.l2_loss(var) for var in tf.trainable_variables()])
+    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
+      logits=logits, labels=self.labels))
+    self.cross_entropy = cross_entropy
+    l2_loss = tf.add_n(
+      [tf.nn.l2_loss(var) for var in tf.trainable_variables()])
 
     # Optimizer and train step
-    with tf.name_scope("optimizer"):
-      optimizer = tf.train.MomentumOptimizer(
-        self.learning_rate, self.nesterov_momentum, use_nesterov=True)
-      self.train_step = optimizer.minimize(
-        cross_entropy + l2_loss * self.weight_decay)
+    optimizer = tf.train.MomentumOptimizer(
+      self.learning_rate, self.nesterov_momentum, use_nesterov=True)
+    self.train_step = optimizer.minimize(
+      cross_entropy + l2_loss * self.weight_decay)
 
-    with tf.name_scope("prediction"):
-      correct_prediction = tf.equal(
-        tf.argmax(prediction, 1),
-        tf.argmax(self.labels, 1))
-      self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    correct_prediction = tf.equal(
+      tf.argmax(prediction, 1),
+      tf.argmax(self.labels, 1))
+    self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
   # (Updated)
   def train_all_epochs(self, train_params):
@@ -447,7 +457,7 @@ class DenseNet3D(object):
 
     # Restore the model if we have
     start_epoch = self.load_model()
-
+    
     # Start training 
     for epoch in range(start_epoch, n_epochs + 1):
       print("\n", '-' * 30, "Train epoch: %d" % epoch, '-' * 30, '\n')
@@ -512,8 +522,8 @@ class DenseNet3D(object):
       if self.should_save_logs:
         self.batches_step += 1
         self.log_loss_accuracy(
-          loss, accuracy, self.batches_step,
-          prefix='per_batch', should_print=False)
+          loss, accuracy, self.batches_step, prefix='per_batch',
+          should_print=False)
     mean_loss = np.mean(total_loss)
     mean_accuracy = np.mean(total_accuracy)
     return mean_loss, mean_accuracy
