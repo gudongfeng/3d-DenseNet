@@ -17,6 +17,7 @@ class DenseNet3D(object):
          weight_decay, nesterov_momentum, model_type, 
          should_save_logs, should_save_model,
          renew_logs=False, reduction=1.0, bc_mode=False,
+         sequence_length, crop_size,
          **kwargs):
     """
     Class to implement networks base on this paper
@@ -31,7 +32,7 @@ class DenseNet3D(object):
         dropout will be disables
       weight_decay: `float`, weight decay for L2 loss, paper = 1e-4
       nesterov_momentum: `float`, momentum for Nesterov optimizer
-      model_type: `str`, 'DenseNet' or 'DenseNet-BC'. Should model use
+      model_type: `str`, 'DenseNet3D' or 'DenseNet3D-BC'. Should model use
         bottle neck connections or not.
       dataset: `str`, dataset name
       should_save_logs: `bool`, should logs be saved or not
@@ -77,6 +78,8 @@ class DenseNet3D(object):
     self.should_save_model  = should_save_model
     self.renew_logs         = renew_logs
     self.batches_step       = 0
+    self.sequence_length    = sequence_length
+    self.crop_size          = crop_size
 
     self._define_inputs()
     self._build_graph()
@@ -146,8 +149,9 @@ class DenseNet3D(object):
 
   @property
   def model_identifier(self):
-    return "{}_growth_rate={}_depth={}_dataset_{}_total_block={}".format(
-      self.model_type, self.growth_rate, self.depth, self.dataset_name, self.total_blocks)
+    return "{}_growth_rate={}_depth={}_seq_length={}_crop_size={}".format(
+      self.model_type, self.growth_rate, self.depth, self.sequence_length,
+      self.crop_size)
 
   # (Updated)
   def save_model(self, global_step=None):

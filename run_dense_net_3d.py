@@ -36,8 +36,8 @@ if __name__ == '__main__':
        'If provided together with `--train` flag testing will be'
        'performed right after training.')
   parser.add_argument(
-    '--model_type', '-m', type=str, choices=['DenseNet', 'DenseNet-BC'],
-    default='DenseNet',
+    '--model_type', '-m', type=str, choices=['DenseNet3D', 'DenseNet3D-BC'],
+    default='DenseNet3D',
     help='What type of model to use (default: %(default)s)')
   parser.add_argument(
     '--growth_rate', '-k', type=int, choices=[12, 24, 40],
@@ -96,10 +96,10 @@ if __name__ == '__main__':
 
   args = parser.parse_args()
 
-  if args.model_type == 'DenseNet':
+  if args.model_type == 'DenseNet3D':
     args.bc_mode = False
     args.reduction = 1.0
-  elif args.model_type == 'DenseNet-BC':
+  elif args.model_type == 'DenseNet3D-BC':
     args.bc_mode = True
 
   model_params = vars(args)
@@ -153,6 +153,8 @@ if __name__ == '__main__':
   # TRAINING & TESTING
   # ==========================================================================
   print("Initialize the model..")
+  model_params['sequence_length'] = train_params['sequence_length']
+  model_params['crop_size']       = train_params['crop_size']
   model = DenseNet3D(data_provider=data_provider, **model_params)
   if args.train:
     print("Data provider train videos: ", data_provider.train.num_examples)
