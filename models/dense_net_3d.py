@@ -16,8 +16,8 @@ class DenseNet3D(object):
          total_blocks, keep_prob, dataset,
          weight_decay, nesterov_momentum, model_type, 
          should_save_logs, should_save_model,
-         renew_logs=False, reduction=1.0, bc_mode=False,
          sequence_length, crop_size,
+         renew_logs=False, reduction=1.0, bc_mode=False,
          **kwargs):
     """
     Class to implement networks base on this paper
