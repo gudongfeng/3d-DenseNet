@@ -1,3 +1,7 @@
+# Reference
+
+[Thesis](https://ruor.uottawa.ca/bitstream/10393/36739/1/Gu_Dongfeng_2017_thesis.pdf)
+
 # 3D-DenseNet with TensorFlow
 
 Expand the `Densely Connected Convolutional Networks [DenseNets](https://arxiv.org/abs/1608.06993) to 3D-DenseNet for action recognition (video classification):
