@@ -7,7 +7,7 @@ MODEL_DIR = 'denseNet3d_result'
 DATA_DIR = 'tfrecord'
 
 HYPERPARAMETERS = {
-    'num_classes': 6,
+    'num_classes': 6,  # The number of the classes that this dataset had
     'batch_size': 10,
     'initial_learning_rate': 0.1,
     'decay_step': 1000,
@@ -21,8 +21,9 @@ HYPERPARAMETERS = {
     'model_type': 'DenseNet3D',
     'reduction': 0.5,  # Reduction rate at transition layer for the models
     'bc_mode': True,
-    'num_frames_per_clip': 16,
-    'crop_size': 128,
+    'num_frames_per_clip': 16,  # The length of the video clip
+    'width': 120,
+    'height': 100,
     'channel': 3,
     'train_total_video_clip': 21297,
     'eval_total_video_clip': 7008

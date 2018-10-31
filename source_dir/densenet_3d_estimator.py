@@ -34,8 +34,8 @@ def serving_input_fn(params):
         tf.placeholder(
             tf.float32,
             shape=[
-                None, params['num_frames_per_clip'], params['crop_size'],
-                params['crop_size'], params['channel']
+                None, params['num_frames_per_clip'], params['width'],
+                params['height'], params['channel']
             ])
     }
     return tf.estimator.export.build_raw_serving_input_receiver_fn(inputs)()
@@ -44,16 +44,16 @@ def serving_input_fn(params):
 def train_input_fn(training_dir, params):
     directory = os.path.join(training_dir, 'train.tfrecord')
     return _build_tfrecord_dataset(directory, params['train_total_video_clip'],
-                                   params)
+                                   **params)
 
 
 def eval_input_fn(evaluating_dir, params):
     directory = os.path.join(evaluating_dir, 'eval.tfrecord')
     return _build_tfrecord_dataset(directory, params['eval_total_video_clip'],
-                                   params)
+                                   **params)
 
 
-def _build_tfrecord_dataset(directory, total_clip_num, params):
+def _build_tfrecord_dataset(directory, total_clip_num, batch_size, **params):
     '''
     Buffer the training dataset to TFRecordDataset with the following video shape
     [num_frames_per_clip, width, height, channel]
@@ -63,33 +63,34 @@ def _build_tfrecord_dataset(directory, total_clip_num, params):
     dataset = dataset.shuffle(buffer_size=total_clip_num)
     dataset = dataset.map(
         map_func=
-        lambda serialized_example: _parser(serialized_example, params['channel'], params['num_frames_per_clip'])
-    )
+        lambda serialized_example: _parser(serialized_example, **params))
     dataset = dataset.repeat()
-    iterator = dataset.batch(
-        batch_size=params['batch_size']).make_one_shot_iterator()
+    iterator = dataset.batch(batch_size=batch_size).make_one_shot_iterator()
     clips, labels = iterator.get_next()
     return {'video_clips': clips}, labels
 
 
-def _parser(serialized_example, channel, num_frames_per_clip):
+def _parser(serialized_example, num_frames_per_clip, **params):
     features = tf.parse_single_example(
         serialized_example,
         features={
-            'clip/crop_size': tf.FixedLenFeature([], tf.int64),
+            'clip/width': tf.FixedLenFeature([], tf.int64),
+            'clip/height': tf.FixedLenFeature([], tf.int64),
             'clip/channel': tf.FixedLenFeature([], tf.int64),
             'clip/raw': tf.FixedLenFeature([num_frames_per_clip], tf.string),
             'clip/label': tf.FixedLenFeature([], tf.int64)
         })
 
     def mapping_func(image):
-        return _decode_image(image, channel)
+        return _decode_image(image, **params)
 
     clip = tf.map_fn(mapping_func, features['clip/raw'], dtype=tf.float32)
     return clip, features['clip/label']
 
 
-def _decode_image(image, channel):
+def _decode_image(image, channel, width, height, **params):
     image = tf.image.decode_jpeg(image, channels=channel)
+    # This set_shape step is necesary for the last trainsition_layer_to_classes layer in the model
+    image.set_shape([width, height, channel])
     image = tf.cast(image, tf.float32)
     return image

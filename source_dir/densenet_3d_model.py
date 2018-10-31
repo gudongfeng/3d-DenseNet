@@ -5,21 +5,22 @@ import tensorflow as tf
 class DenseNet3D(object):
     """3D DenseNet Model class"""
 
-    def __init__(self,
-                 video_clips, # Shape: [batch_size, sequence_length, width, height, channels]
-                 labels,      # Shape: [batch_size, num_classes] 
-                 initial_learning_rate,
-                 decay_step,
-                 lr_decay_factor,
-                 num_classes,
-                 growth_rate,
-                 network_depth,
-                 total_blocks,
-                 keep_prob,
-                 weight_decay,
-                 reduction,
-                 bc_mode=False,
-                 **kwargs):
+    def __init__(
+            self,
+            video_clips,  # Shape: [batch_size, sequence_length, width, height, channels]
+            labels,  # Shape: [batch_size, num_classes] 
+            initial_learning_rate,
+            decay_step,
+            lr_decay_factor,
+            num_classes,
+            growth_rate,
+            network_depth,
+            total_blocks,
+            keep_prob,
+            weight_decay,
+            reduction,
+            bc_mode=False,
+            **kwargs):
         self.video_clips = video_clips
         self.labels = labels
         self.num_classes = num_classes
@@ -89,12 +90,13 @@ class DenseNet3D(object):
             self._logits = self._trainsition_layer_to_classes(output)
 
         # Prediction result
-        self._prediction = tf.nn.softmax(self._logits)
+        self._prediction = tf.argmax(self._logits, 1)
 
         # Losses
         self._cross_entropy = tf.reduce_mean(
-            tf.nn.softmax_cross_entropy_with_logits(
-                logits=self._logits, labels=self.labels))
+            tf.nn.sparse_softmax_cross_entropy_with_logits(
+                logits=self._logits, labels=self.labels),
+            name='Cross_entropy')
         self.l2_loss = tf.add_n(
             [tf.nn.l2_loss(var) for var in tf.trainable_variables()])
         self.total_loss = self._cross_entropy + self.l2_loss * self.weight_decay
@@ -124,9 +126,8 @@ class DenseNet3D(object):
 
     @property
     def accuracy(self):
-        correct_prediction = tf.equal(
-            tf.argmax(self._prediction, 1), tf.argmax(self.labels, 1))
-        return tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        correct_prediction = tf.equal(tf.argmax(self._logits, 1), self.labels)
+        return tf.metrics.mean(tf.cast(correct_prediction, tf.float32))
 
     @property
     def is_training(self):
@@ -191,7 +192,7 @@ class DenseNet3D(object):
                 bottleneck_out, out_features_count=growth_rate, kernel_size=3)
 
         with tf.name_scope('concat'):
-            return tf.concat(4, (inputs, composite_out))
+            return tf.concat(axis=4, values=(inputs, composite_out))
 
     def _composite_function(self, inputs, out_features_count, kernel_size):
         with tf.variable_scope('composite_function'):
