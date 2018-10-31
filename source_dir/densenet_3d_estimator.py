@@ -34,8 +34,8 @@ def serving_input_fn(params):
         tf.placeholder(
             tf.float32,
             shape=[
-                None, params['num_frames_per_clip'], params['width'],
-                params['height'], params['channel']
+                None, params['num_frames_per_clip'], params['height'],
+                params['width'], params['channel']
             ])
     }
     return tf.estimator.export.build_raw_serving_input_receiver_fn(inputs)()
@@ -56,8 +56,8 @@ def eval_input_fn(evaluating_dir, params):
 def _build_tfrecord_dataset(directory, total_clip_num, batch_size, **params):
     '''
     Buffer the training dataset to TFRecordDataset with the following video shape
-    [num_frames_per_clip, width, height, channel]
-    ex: [16, 128, 128, 3]
+    [num_frames_per_clip, height, width, channel]
+    ex: [16, 100, 120, 3]
     '''
     dataset = tf.data.TFRecordDataset(directory)
     dataset = dataset.shuffle(buffer_size=total_clip_num)
@@ -91,6 +91,6 @@ def _parser(serialized_example, num_frames_per_clip, **params):
 def _decode_image(image, channel, width, height, **params):
     image = tf.image.decode_jpeg(image, channels=channel)
     # This set_shape step is necesary for the last trainsition_layer_to_classes layer in the model
-    image.set_shape([width, height, channel])
+    image.set_shape([height, width, channel])
     image = tf.cast(image, tf.float32)
     return image

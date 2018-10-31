@@ -7,7 +7,7 @@ class DenseNet3D(object):
 
     def __init__(
             self,
-            video_clips,  # Shape: [batch_size, sequence_length, width, height, channels]
+            video_clips,  # Shape: [batch_size, sequence_length, height, width, channels]
             labels,  # Shape: [batch_size, num_classes] 
             initial_learning_rate,
             decay_step,

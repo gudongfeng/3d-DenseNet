@@ -12,3 +12,4 @@ train.list
 *.DS_Store
 run.sh
 denseNet3d_result/
+*.tfrecord
