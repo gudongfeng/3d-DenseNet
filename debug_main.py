@@ -4,7 +4,7 @@ import tensorflow as tf
 import source_dir.densenet_3d_estimator as estimator
 
 MODEL_DIR = 'denseNet3d_result'
-DATA_DIR = 'tfrecord'
+DATA_DIR = '/Users/dongfenggu/Desktop/tfrecord'
 
 HYPERPARAMETERS = {
     'num_classes': 6,  # The number of the classes that this dataset had
@@ -42,8 +42,3 @@ CLASSIFIER.train(
 CLASSIFIER.evaluate(
     input_fn=lambda: estimator.eval_input_fn(DATA_DIR, HYPERPARAMETERS),
     steps=1)
-
-CLASSIFIER.export_savedmodel(
-    export_dir_base=MODEL_DIR,
-    serving_input_receiver_fn=
-    lambda: estimator.serving_input_fn(HYPERPARAMETERS))
