@@ -1,0 +1,56 @@
+import os
+
+from sagemaker.tensorflow import TensorFlow
+
+# (Option1) Run the training in Sagemaker
+# train_instance_type = 'ml.m5.large'
+# data_location = 's3://<s3_bucket_name>/kth_tfrecord'
+
+# (Option2) For local running config
+# train_instance_type = 'local'
+# data_location = 'file:///Users/dongfenggu/Desktop/tfrecord/'
+
+model_artifacts_location = 's3://<s3_bucket_name>/kth_result/artifacts'
+custom_code_upload_location = 's3://<s3_bucket_name>/kth_result/customcode/tensorflow_c3d'
+
+role = 'arn:aws:iam::<aws_account_id>:role/sagemaker-full-access-role'
+
+HYPERPARAMETERS = {
+    'num_classes': 6,  # The number of the classes that this dataset had
+    'batch_size': 10,
+    'initial_learning_rate': 0.1,
+    'decay_step': 1000,
+    'lr_decay_factor':
+    0.1,  # Learning rate will decay by a factor for every decay_step
+    'growth_rate': 12,  # Grows rate for every layer [12, 24, 40]
+    'network_depth': 20,  # Depth of the whole network [20, 40, 250]
+    'total_blocks': 3,  # Total blocks of layers stack
+    'keep_prob': 0.9,  # Keep probability for dropout
+    'weight_decay': 1e-4,  # Weight decay for L2 loss
+    'model_type': 'DenseNet3D',
+    'reduction': 0.5,  # Reduction rate at transition layer for the models
+    'bc_mode': True,
+    'num_frames_per_clip': 16,  # The length of the video clip
+    'width': 120,
+    'height': 100,
+    'channel': 3,
+    'train_total_video_clip': 21297 # This number is for KTH dataset with default setting,
+    'eval_total_video_clip': 7008 # This number is for KTH dataset with default setting
+}
+
+source_dir = os.path.join(os.getcwd(), 'source_dir')
+estimator = TensorFlow(
+    entry_point='densenet_3d_estimator.py',
+    source_dir=source_dir,
+    role=role,
+    output_path=model_artifacts_location,
+    code_location=custom_code_upload_location,
+    train_instance_count=1,
+    train_volume_size=30,  # GB
+    framework_version='1.8.0',
+    train_instance_type=train_instance_type,
+    training_steps=1,
+    evaluation_steps=1,
+    hyperparameters=HYPERPARAMETERS)
+
+estimator.fit(data_location, run_tensorboard_locally=False)

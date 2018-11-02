@@ -6,6 +6,8 @@
 - python 3.6.5
 - opencv-python 3.4.3.18
 - Pillow 5.3.0 
+- sagemaker 1.12.0
+
 
 ### Data preparation
 1. Download the video dataset and make sure it has the following folder structure (`../video/<action_name>/<video1.avi>` KTH ex: ../kth_video/boxing/person01_boxing_d1_uncomp.avi)
@@ -23,7 +25,18 @@
 5. Run `python debug_train.py` (Make sure you have all the dependencies).
 
 ### Train (AWS sagemaker)
-(To be continued)
+**Note: It turns out Sagemaker doesn't support python3 for Tensorflow script at this moment (2018.Nov.1)!!!**
+**So I will stop working on this part and left the `sagemaker_main.template` file as it is for now.**
+1. Register AWS account. [AWS Console](https://console.aws.amazon.com)
+2. Create an IAM user with only `Programmatic access` and attached `AmazonS3FullAccess` and `AmazonSageMakerFullAccess` to this IAM user. Keep a record of your `Access Key ID` and `Secret Access Key` (**Don't tell anyone this information!!! Even your husband/wife**).
+3. Install [boto3](https://aws.amazon.com/sdk-for-python/) on your local desktop. Run `aws configure` in your console and paste the `Access Key ID` and `Secret Access Key` from previous step. Keep in mind the region (ex: `us-west-2`) that you used.
+4. Create a new Role with name `sagemaker-full-access-role` and attach an inline policy with the following [JSON](http://gudongfeng.me/sagemaker-role-inline-policy.txt)
+5. Create a new S3 bucekt with whatever name you want in the same region in Step3. Let said the S3 bucket name is `machine_leaning_data_bucket`.
+6. Rename the `sagemaker_main.template` to `sagemaker_main.py`
+7. Copy the new Role ARN (ex: `arn:aws:iam::<aws_account_id>:role/sagemaker-full-access-role`) and paste it to the `role` value in the `sagemaker_main.py`
+8. Replace the `<s3_bucket_name>` in `sagemaker_main.py` with S3 bucket name `machine_leaning_data_bucket` (Whatever S3 bucket name you have).
+9. Chooes one option in the `sagemaker_main.py` and run `python sagemaker_main.py`. Notice that if you choose 
+> As I said at the beginning, sagemaker doesn't support tensorflow docker image with python version 3, so you will get error `Attempted relative import in non-package` at this moment. I will try to rework this file once sagemaker support it. 
 
 ## Background
 Expand the `Densely Connected Convolutional Networks [DenseNets](https://arxiv.org/abs/1608.06993) to 3D-DenseNet for action recognition (video classification):
