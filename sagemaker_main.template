@@ -11,7 +11,7 @@ from sagemaker.tensorflow import TensorFlow
 # data_location = 'file:///Users/dongfenggu/Desktop/tfrecord/'
 
 model_artifacts_location = 's3://<s3_bucket_name>/kth_result/artifacts'
-custom_code_upload_location = 's3://<s3_bucket_name>/kth_result/customcode/tensorflow_c3d'
+custom_code_upload_location = 's3://<s3_bucket_name>/kth_result/customcode/3d_densenet'
 
 role = 'arn:aws:iam::<aws_account_id>:role/sagemaker-full-access-role'
 
