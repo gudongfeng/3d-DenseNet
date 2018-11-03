@@ -53,16 +53,6 @@ A number of layers, blocks, growth rate, video normalization and other training 
 
 There are also many [other implementations](https://github.com/liuzhuang13/DenseNet), they may be useful also.
 
-## Result
-
-Test results on MERL shopping dataset. Video normalization per channels was used.
-![image](/fig/result.png)
-
-
-Approximate training time for models on GeForce GTX TITAN X (12 GB memory):
-
-- 3D-DenseNet(*k* = 12, *d* = 20) - 25 hrs
-
 ## Reference
 
 [Thesis](https://ruor.uottawa.ca/bitstream/10393/36739/1/Gu_Dongfeng_2017_thesis.pdf)
