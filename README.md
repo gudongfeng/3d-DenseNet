@@ -6,7 +6,7 @@
 - python 3.6.5
 - opencv-python 3.4.3.18
 - Pillow 5.3.0 
-- sagemaker 1.12.0
+- sagemaker 1.15.2
 
 
 ### Data preparation

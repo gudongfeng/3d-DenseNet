@@ -49,8 +49,7 @@ estimator = TensorFlow(
     train_volume_size=30,  # GB
     framework_version='1.8.0',
     train_instance_type=train_instance_type,
-    training_steps=1,
-    evaluation_steps=1,
+    py_version='py3',
     hyperparameters=HYPERPARAMETERS)
 
 estimator.fit(data_location, run_tensorboard_locally=False)

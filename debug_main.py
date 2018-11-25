@@ -8,9 +8,9 @@ DATA_DIR = '/Users/dongfenggu/Desktop/tfrecord'
 
 HYPERPARAMETERS = {
     'num_classes': 6,  # The number of the classes that this dataset had
-    'batch_size': 10,
+    'batch_size': 20,
     'initial_learning_rate': 0.1,
-    'decay_step': 1000,
+    'decay_step': 5000,
     'lr_decay_factor':
     0.1,  # Learning rate will decay by a factor for every decay_step
     'growth_rate': 12,  # Grows rate for every layer [12, 24, 40]
@@ -37,8 +37,8 @@ CLASSIFIER = tf.estimator.Estimator(
 
 CLASSIFIER.train(
     input_fn=lambda: estimator.train_input_fn(DATA_DIR, HYPERPARAMETERS),
-    steps=1)
+    steps=10000)
 
 CLASSIFIER.evaluate(
     input_fn=lambda: estimator.eval_input_fn(DATA_DIR, HYPERPARAMETERS),
-    steps=1)
+    steps=100)
